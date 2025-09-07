@@ -92,20 +92,7 @@ export default function PerformanceCard({ performance, isEditable = false, onCha
 
       {/* Stats Row */}
       <div style={{ display: "flex", gap: 12 }}>
-        <div style={{ flex: 1, backgroundColor: "#e0f2fe", borderRadius: 12, padding: 12, textAlign: "center" }}>
-          ⏱️
-          {isEditable ? (
-            <input
-              type="number"
-              value={minutes}
-              onChange={(e) => handleInputChange("minutes", e.target.value)}
-              style={{ fontWeight: "bold", fontSize: 18, width: "60%", textAlign: "center", border: "1px solid #ccc", borderRadius: 6 }}
-            />
-          ) : (
-            <div style={{ fontWeight: "bold", fontSize: 18 }}>{minutes}'</div>
-          )}
-          <div style={{ fontSize: 12, color: "#374151" }}>Minutes</div>
-        </div>
+        
         <div style={{ flex: 1, backgroundColor: "#fff7ed", borderRadius: 12, padding: 12, textAlign: "center" }}>
           🏆
           {isEditable ? (
@@ -120,6 +107,20 @@ export default function PerformanceCard({ performance, isEditable = false, onCha
             <div style={{ fontWeight: "bold", fontSize: 18 }}>{rating}</div>
           )}
           <div style={{ fontSize: 12, color: "#374151" }}>Rating</div>
+        </div>
+        <div style={{ flex: 1, backgroundColor: "#e0f2fe", borderRadius: 12, padding: 12, textAlign: "center" }}>
+          ⏱️
+          {isEditable ? (
+            <input
+              type="number"
+              value={minutes}
+              onChange={(e) => handleInputChange("minutes", e.target.value)}
+              style={{ fontWeight: "bold", fontSize: 18, width: "60%", textAlign: "center", border: "1px solid #ccc", borderRadius: 6 }}
+            />
+          ) : (
+            <div style={{ fontWeight: "bold", fontSize: 18 }}>{minutes}'</div>
+          )}
+          <div style={{ fontSize: 12, color: "#374151" }}>Minutes</div>
         </div>
       </div>
 
@@ -142,7 +143,7 @@ export default function PerformanceCard({ performance, isEditable = false, onCha
       <div style={{ display: "flex", gap: 12 }}>
         <div style={{ flex: 1, backgroundColor: "#d1fae5", borderRadius: 12, padding: 12 }}>
           <div style={{ fontWeight: "bold", fontSize: 12, marginBottom: 4, textAlign: "left" }}>✅ Did Well</div>
-          <ul style={{ paddingLeft: 16, margin: 0, fontSize: 10, textAlign: "left" }}>
+          <ul style={{ paddingLeft: 16, margin: 0, fontSize: 10, textAlign: "left",listStyle:"none"  }}>
             {didWell.map((item, idx) => (
               <li key={idx}>
                 {isEditable ? (
@@ -159,7 +160,7 @@ export default function PerformanceCard({ performance, isEditable = false, onCha
         </div>
         <div style={{ flex: 1, backgroundColor: "#fee2e2", borderRadius: 12, padding: 12 }}>
           <div style={{ fontWeight: "bold", fontSize: 12, marginBottom: 4, textAlign: "left" }}>⚠️ Could Improve</div>
-          <ul style={{ paddingLeft: 16, margin: 0, fontSize: 10, textAlign: "left" }}>
+          <ul style={{ paddingLeft: 16, margin: 0, fontSize: 10, textAlign: "left", listStyle:"none" }}>
             {couldImprove.map((item, idx) => (
               <li key={idx}>
                 {isEditable ? (

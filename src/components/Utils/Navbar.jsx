@@ -5,7 +5,6 @@ export default function Navbar({ title = "Playr", children }) {
   return (
     <nav
       style={{
-        width: "100%",
         padding: "12px 24px",
         display: "flex",
         justifyContent: "space-between",
