@@ -3,6 +3,7 @@ import PerformanceCard from "@/components/cards/PerformanceCard";
 import Navbar from "@/components/Utils/Navbar";
 import React, { useState, useEffect } from "react";
 import { useSession, signIn } from "next-auth/react";
+import DashboardBox from "@/components/dashboardComponents/dashboardBox";
 // Positions
 const positions = {
   Goalkeeper: ["Goalkeeper"],
@@ -13,9 +14,12 @@ const positions = {
 
 export default function Dashboard() {
   const [performances, setPerformances] = useState([]);
+  const [lastPerformance, setLastPerformance] = useState(null);
   const [showModal, setShowModal] = useState(false);
   const [expandedPerformance, setExpandedPerformance] = useState(null);
   const [step, setStep] = useState(0);
+    const [isMobile, setIsMobile] = useState(false);
+
   const [formData, setFormData] = useState({
     match: "", date: "", mainPosition: "Goalkeeper", subPosition: "Goalkeeper",
     minutes: "", rating: "", matchOverview: "", didWell: ["", "", ""], couldImprove: ["", "", ""]
@@ -23,38 +27,70 @@ export default function Dashboard() {
 
  const { data: session } = useSession();
 
+const rating = 7.5; // Hardcoded for now
+const previousRatings = [6.5, 7.8, 5.5]; 
+const currentRating = 7.5;
+const getCircleColor = (rating) => {
+  if (rating > 7) return "#006400"; // dark green
+  if (rating > 6) return "#90EE90"; // light green
+  return "#FF4C4C"; // red
+};
+// Determine circle color
+let circleColor = "";
+if (rating > 7) circleColor = "#006400"; // Dark green
+else if (rating > 6) circleColor = "#90EE90"; // Light green
+else circleColor = "#FF4C4C"; // Red
 
 useEffect(() => {
-  if (!session) return;
+    if (!session) return;
 
-  const fetchPerformances = async () => {
-    try {
-      // ✅ log session email first
-      console.log("Current user email:", session?.user?.email);
+    const fetchPerformances = async () => {
+      try {
+        const response = await fetch(
+          `/api/performances/performances?userId=${encodeURIComponent(session.user.email)}`
+        );
+        if (!response.ok) throw new Error("Failed to fetch performances");
 
-      const response = await fetch("/api/performances/performances?recent=true");
-
-      // log status
-      console.log("Response status:", response.status);
-
-      if (!response.ok) {
-        const errText = await response.text();
-        throw new Error(`Failed to fetch performances: ${errText}`);
+        const data = await response.json();
+        setPerformances(data);
+      } catch (err) {
+        console.error("Error fetching performances:", err);
       }
+    };
 
-      const data = await response.json();
-      console.log("Fetched performances:", data);
-      setPerformances(data);
-    } catch (err) {
-      console.error("Error fetching performances:", err);
-    }
-  };
+    fetchPerformances();
+  }, [session]);
 
-  fetchPerformances();
-}, [session]);
+  // Fetch the last (most recent) performance
+  useEffect(() => {
+    if (!session) return;
+
+    const fetchLastPerformance = async () => {
+      try {
+        const response = await fetch(
+          `/api/performances/performances?userId=${encodeURIComponent(session.user.email)}&recent=true`
+        );
+        if (!response.ok) throw new Error("Failed to fetch last performance");
+
+        const data = await response.json();
+        console.log("Hello", data[0])
+        setLastPerformance(data[0]); // ✅ data is already a single object from backend
+      } catch (err) {
+        console.error("Error fetching last performance:", err);
+      }
+    };
+
+    fetchLastPerformance();
+  }, [session]);
 
 
-
+   useEffect(() => {
+    // Responsive: check mobile width
+    const handleResize = () => setIsMobile(window.innerWidth <= 768);
+    handleResize();
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
  const handleChange = (e, idx, field) => {
   const { name, value } = e.target;
 
@@ -135,7 +171,7 @@ useEffect(() => {
     backgroundColor: "rgba(255,255,255,0.15)",
     backdropFilter: "blur(6px)",
     WebkitBackdropFilter: "blur(6px)",
-    color: "#1e3a8a",
+    color: "#fff",
     outline: "none",
     width: "90%",
     fontSize: 13,
@@ -146,61 +182,505 @@ useEffect(() => {
   const totalGoals = performances.reduce((sum, p) => sum + (p.goals || 0), 0);
   const totalAssists = performances.reduce((sum, p) => sum + (p.assists || 0), 0);
 
+  const gridStyle = {
+    display: "grid",
+    gridTemplateColumns: isMobile ? "1fr" : "repeat(3, 500px)",
+    gridTemplateRows: isMobile ? "auto" : "auto auto",
+    gap: "24px",
+    justifyItems: "center",
+    margin: "0 auto",
+    width: isMobile ? "90%" : "max-content",
+  };
+
   return (
-    <div style={{ minHeight: "100vh", background: "linear-gradient(to bottom right, #1e3a8a, #0d9488)", fontFamily: "Arial, sans-serif", padding: 16 }}>
+    <div style={{ minHeight: "100vh",  fontFamily: "Arial, sans-serif", padding: 16 }}>
       <Navbar />
 
-      {/* Performance Cards */}
-      <div style={{ margin: "0 auto", textAlign: "center", padding: "20px" }}>
-         <h2 style={
-          {color:"white"}
-         }>Recent Performances</h2>
 
-         
-  <div
-    style={{
-      display: "flex",
-      justifyContent: "center",
-      gap: 12,
-      flexWrap: "wrap",
-      padding: "12px",
-      backgroundColor: "rgba(255,255,255,0.1)",
-      borderRadius: 12,
-      boxShadow: "inset 0 0 8px rgba(0,0,0,0.1)",
-      maxWidth: "1200px",
-      margin: "0 auto",
-    }}
-  >
+<div style={gridStyle}>
+  {/* Row 1, Column 1: Last Performance */}
+  <div style={{ width: "100%", textAlign: "center" }}>
+    <h2 style={{ color: "#fff", marginBottom: 8 }}>Last Performance</h2>
+    <DashboardBox color="lightblue">
+      <div
+        style={{
+          width: "90%",
+          height: "85%",
+          borderRadius: "20px",
+          padding: "20px",
+          display: "grid",
+          gridTemplateColumns: "1fr 1fr",
+          gridTemplateRows: "auto auto auto",
+          gap: "16px",
+          fontFamily: "Arial, sans-serif",
+        }}
+      >
+        {/* Row 1: Minutes & Rating */}
+        <div
+          style={{
+            background: "#AEC6CF",
+            borderRadius: "12px",
+            padding: "16px",
+            fontWeight: "bold",
+            fontSize: 32,
+            display: "flex",
+            flexDirection: "column",
+            justifyContent: "center",
+            alignItems: "center",
+            color: "#FFF",
+            boxShadow: "0 4px 10px rgba(0,0,0,0.2)",
+          }}
+        >
+          ⏱️
+          <span style={{ fontSize: 20, marginTop: 4 }}>{lastPerformance?.minutes ?? "-"} min</span>
+          <span style={{ fontSize: 12, marginTop: 2 }}>Played</span>
+        </div>
 
-   
-    {performances.map((perf) => (
-      <PerformanceCard
-        key={perf._id} // use _id from Mongo
-        performance={perf}
-        onClick={() => setExpandedPerformance(perf)}
-        onDelete={async () => {
-  try {
-    const id = perf._id.toString(); // ensure string
-    const res = await fetch(`/api/performances/${id}`, { method: "DELETE" });
-    if (!res.ok) throw new Error("Failed to delete performance");
+        <div
+          style={{
+            background: "#77DD77",
+            borderRadius: "12px",
+            padding: "16px",
+            fontWeight: "bold",
+            fontSize: 32,
+            display: "flex",
+            flexDirection: "column",
+            justifyContent: "center",
+            alignItems: "center",
+            color: "#FFF",
+            boxShadow: "0 4px 10px rgba(0,0,0,0.2)",
+          }}
+        >
+          ⭐
+          <span style={{ fontSize: 20, marginTop: 4 }}>{lastPerformance?.rating ?? "-"}</span>
+          <span style={{ fontSize: 12, marginTop: 2 }}>Rating</span>
+        </div>
 
-    setPerformances(prev => prev.filter(p => p._id !== perf._id));
-  } catch (err) {
-    console.error("Error deleting performance:", err);
-  }
-}}
+        {/* Row 2: Position */}
+        <div
+          style={{
+            gridColumn: "span 2",
+            background: "#FFD1DC",
+            borderRadius: "12px",
+            padding: "16px",
+            fontWeight: "bold",
+            fontSize: 18,
+            display: "flex",
+            flexDirection: "column",
+             color:"#FFF",
+            justifyContent: "center",
+            alignItems: "center",
+            textAlign: "center",
+            boxShadow: "0 4px 10px rgba(0,0,0,0.15)",
+          }}
+        >
+          🧍 {lastPerformance?.position ?? "-"}
+          <span style={{ fontSize: 12, marginTop: 2, color:"#FFF"}}>Position</span>
+        </div>
 
-      />
-    ))}
+        {/* Row 3: Did Well */}
+        <div
+          style={{
+            gridColumn: "span 2",
+            background: "#FFB347",
+            borderRadius: "12px",
+            padding: "16px",
+            fontWeight: "bold",
+            fontSize: 14,
+            display: "flex",
+            flexDirection: "column",
+            justifyContent: "center",
+            alignItems: "center",
+            textAlign: "center",
+            color:"#FFF",
+            boxShadow: "0 4px 10px rgba(0,0,0,0.15)",
+          }}
+        >
+          <span style={{ fontSize: 16, fontWeight: "bold", marginBottom: 8 }}>✅ Did Well</span>
+          {lastPerformance?.didWell?.length ? (
+            <ul
+              style={{
+                listStyle: "none",
+                padding: 0,
+                margin: 0,
+                display: "flex",
+                flexDirection: "column",
+                gap: "4px",
+                alignItems: "center",
+                fontSize: 14,
+              }}
+            >
+              {lastPerformance.didWell.map((item, idx) => (
+                <li key={idx}>• {item}</li>
+              ))}
+            </ul>
+          ) : (
+            <span>-</span>
+          )}
+        </div>
+      </div>
+    </DashboardBox>
   </div>
 
+  {/* Row 1, Column 2 */}
+  <div style={{ width: "100%", textAlign: "center" }}>
+    <h3 style={{ color: "#fff", marginBottom: 8 }}>Training Form</h3>
+    <DashboardBox color="lightgreen">
+<div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "24px" }}>
+  {/* Main big circle */}
+  <div
+    style={{
+      width: "160px",
+      height: "160px",
+      borderRadius: "50%",
+      border: "20px solid " + getCircleColor(currentRating),
+      display: "flex",
+      justifyContent: "center",
+      alignItems: "center",
+      fontSize: "48px",
+      fontWeight: "bold",
+      color: "#FFF",
+      backgroundColor: "#1a1a1a",
+      boxShadow: "0 4px 20px rgba(0,0,0,0.3)",
+    }}
+  >
+    {currentRating}
+  </div>
 
-        <button onClick={() => setShowModal(true)} style={{
-          marginTop: 12, backgroundColor: "rgba(255, 255, 255,0.7)", backdropFilter: "blur(12px)",
-          borderRadius: 12, width: 260, padding: 12, boxShadow: "0 6px 16px rgba(0,0,0,0.15)",
-          fontWeight: "bold", color: "#1e3a8a", fontSize: 14
-        }}>+ Add Performance</button>
+  {/* Previous sessions */}
+ <div style={{ display: "flex", gap: "16px" }}>
+  {previousRatings.map((rating, idx) => (
+    <div
+      key={idx}
+      style={{
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        gap: "4px", // space between circle and date
+      }}
+    >
+      {/* Circle with rating */}
+      <div
+        style={{
+          width: "60px",
+          height: "60px",
+          borderRadius: "50%",
+          border: "10px solid " + getCircleColor(rating),
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "center",
+          fontSize: "18px",
+          fontWeight: "bold",
+          color: "#FFF",
+          backgroundColor: "#1a1a1a",
+          boxShadow: "0 2px 10px rgba(0,0,0,0.25)",
+        }}
+      >
+        {rating}
       </div>
+
+      {/* Hardcoded date */}
+      <span style={{ fontSize: "14px", color: "#000" }}>
+        {["08/01", "08/05", "08/08"][idx]}
+      </span>
+    </div>
+  ))}
+</div>
+
+</div>
+    </DashboardBox>
+  </div>
+
+  {/* Row 1, Column 3 */}
+ {/* Column layout for last 3 performances with opponent */}
+<div style={{ width: "100%", textAlign: "center" }}>
+  <h3 style={{ color: "#fff", marginBottom: 8 }}>Last 3 Performances</h3>
+  <DashboardBox color="lightcoral">
+    <div
+      style={{
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        gap: "12px",
+        padding: "16px",
+      }}
+    >
+      {performances.slice(-3).map((p, idx) => {
+        const getTileColor = (rating) => {
+          if (rating > 7) return "#006400"; // dark green
+          if (rating > 6) return "#90EE90"; // light green
+          return "#FF4C4C"; // red
+        };
+
+        return (
+<div
+  key={idx}
+  style={{
+    width: "90%", // fit nicely inside parent
+    minHeight: "80px",
+    backgroundColor: "rgba(255, 255, 255, 0.1)", // semi-transparent for glass effect
+    borderRadius: "16px",
+    padding: "12px 16px",
+    color: "#fff",
+    display: "flex",
+    flexDirection: "row", // row layout
+    justifyContent: "space-between", // space out items evenly
+    alignItems: "center",
+    boxShadow: "0 4px 12px rgba(0,0,0,0.3)",
+    border: "1px solid rgba(255, 255, 255, 0.3)", // light border
+    backdropFilter: "blur(6px)", // glassy blur effect
+    WebkitBackdropFilter: "blur(6px)", // Safari support
+  }}
+>
+  <span style={{ fontSize: "15px", fontWeight: "bold" }}>{p.match ?? "Opponent"}</span>
+  <span style={{ fontSize: "16px", fontWeight: "bold" }}>⭐ {p.rating}</span>
+  <span style={{ fontSize: "16px" }}>⏱️ {p.minutes + "'" ?? 0} </span>
+  <span style={{ fontSize: "14px" }}>🧍 {p.position ?? "-"}</span>
+</div>
+
+
+        );
+      })}
+      {performances.length === 0 && <span style={{ color: "#fff" }}>No data</span>}
+    </div>
+  </DashboardBox>
+</div>
+
+
+  {/* Row 2, Column 1 */}
+  <div style={{ width: "100%", textAlign: "center" }}>
+    <h3 style={{ color: "#fff", marginBottom: 8 }}>Season 2025/26</h3>
+    <DashboardBox color="lightpink">
+    <div
+      style={{
+        display: "grid",
+        gridTemplateColumns: "1fr 1fr",
+        gridTemplateRows: "auto auto",
+        gap: "16px",
+        width: "90%",
+        height: "85%",
+      }}
+    >
+      {/* Total Minutes */}
+      <div
+        style={{
+          background: "#AEC6CF",
+          borderRadius: "12px",
+          padding: "16px",
+          fontWeight: "bold",
+          fontSize: 24,
+          display: "flex",
+          flexDirection: "column",
+          justifyContent: "center",
+          alignItems: "center",
+          color: "#FFF",
+          boxShadow: "0 4px 10px rgba(0,0,0,0.2)",
+        }}
+      >
+        ⏱️
+        <span style={{ fontSize: 18, marginTop: 4 }}>{totalMinutes} min</span>
+        <span style={{ fontSize: 12, marginTop: 2 }}>Played</span>
+      </div>
+
+      {/* Average Rating */}
+      <div
+        style={{
+          background: "#77DD77",
+          borderRadius: "12px",
+          padding: "16px",
+          fontWeight: "bold",
+          fontSize: 24,
+          display: "flex",
+          flexDirection: "column",
+          justifyContent: "center",
+          alignItems: "center",
+          color: "#FFF",
+          boxShadow: "0 4px 10px rgba(0,0,0,0.2)",
+        }}
+      >
+        ⭐
+        <span style={{ fontSize: 18, marginTop: 4 }}>{averageRating}</span>
+        <span style={{ fontSize: 12, marginTop: 2 }}>Avg Rating</span>
+      </div>
+
+      {/* Total Goals */}
+      <div
+        style={{
+          background: "#FFD1DC",
+          borderRadius: "12px",
+          padding: "16px",
+          fontWeight: "bold",
+          fontSize: 24,
+          display: "flex",
+          flexDirection: "column",
+          justifyContent: "center",
+          alignItems: "center",
+          color: "#FFF",
+          boxShadow: "0 4px 10px rgba(0,0,0,0.2)",
+        }}
+      >
+        ⚽
+        <span style={{ fontSize: 18, marginTop: 4 }}>{totalGoals}</span>
+        <span style={{ fontSize: 12, marginTop: 2 }}>Goals</span>
+      </div>
+
+      {/* Total Assists */}
+      <div
+        style={{
+          background: "#FFB347",
+          borderRadius: "12px",
+          padding: "16px",
+          fontWeight: "bold",
+          fontSize: 24,
+          display: "flex",
+          flexDirection: "column",
+          justifyContent: "center",
+          alignItems: "center",
+          color: "#FFF",
+          boxShadow: "0 4px 10px rgba(0,0,0,0.2)",
+        }}
+      >
+        🅰️
+        <span style={{ fontSize: 18, marginTop: 4 }}>{totalAssists}</span>
+        <span style={{ fontSize: 12, marginTop: 2 }}>Assists</span>
+      </div>
+    </div>
+  </DashboardBox>
+  </div>
+
+{/* Row 2, Column 2 */}
+<div style={{ width: "100%", textAlign: "center" }}>
+  <h3 style={{ color: "#fff", marginBottom: 8 }}>Add Performance</h3>
+  <DashboardBox color="lightsalmon">
+    <div
+      style={{
+        width: "90%",
+        height: "85%",
+        borderRadius: "20px",
+        padding: "20px",
+        display: "flex",
+        flexDirection: "column",
+        justifyContent: "center",
+        alignItems: "center",
+        gap: "20px",
+        textAlign: "center",
+      }}
+    >
+      {/* Icon with strong border */}
+      <div
+        style={{
+          fontSize: "48px",
+          width: "80px",
+          height: "80px",
+          borderRadius: "50%",
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "center",
+          color: "#fff",
+          boxShadow: "0 4px 10px rgba(0,0,0,0.2)",
+          border: "4px solid #fff", // ✅ strong white border
+          transition: "all 0.2s ease",
+        }}
+      >
+        ➕
+      </div>
+
+      {/* Text */}
+      <p style={{ color: "#fff", fontWeight: "bold", fontSize: 16 }}>
+        Add a new match performance
+      </p>
+
+      {/* Button */}
+      <button
+        onClick={() => setShowModal(true)}
+        style={{
+          padding: "12px 24px",
+          borderRadius: "12px",
+          border: "none",
+          backgroundColor: "#2563EB",
+          color: "#fff",
+          fontWeight: "bold",
+          fontSize: 14,
+          cursor: "pointer",
+          transition: "all 0.2s ease",
+        }}
+        onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "#1e40af")}
+        onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "#2563EB")}
+      >
+        Add Performance
+      </button>
+    </div>
+  </DashboardBox>
+</div>
+
+{/* Row 2, Column 3 */}
+<div style={{ width: "100%", textAlign: "center" }}>
+  <h3 style={{ color: "#fff", marginBottom: 8 }}>Add Training</h3>
+  <DashboardBox color="lightseagreen">
+    <div
+      style={{
+        width: "90%",
+        height: "85%",
+        borderRadius: "20px",
+        padding: "20px",
+        display: "flex",
+        flexDirection: "column",
+        justifyContent: "center",
+        alignItems: "center",
+        gap: "20px",
+        textAlign: "center",
+      }}
+    >
+      {/* Icon with strong border */}
+      <div
+        style={{
+          fontSize: "48px",
+          background: "rgba(255,255,255,0.2)",
+          width: "80px",
+          height: "80px",
+          borderRadius: "50%",
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "center",
+          color: "#fff",
+          boxShadow: "0 4px 10px rgba(0,0,0,0.2)",
+          border: "4px solid #fff", // Strong border
+          transition: "all 0.2s ease",
+        }}
+      >
+        🏋️
+      </div>
+
+      {/* Text */}
+      <p style={{ color: "#fff", fontWeight: "bold", fontSize: 16 }}>
+        Add a new training session
+      </p>
+
+      {/* Button */}
+      <button
+        onClick={() => setShowModal(true)} // Or handle training modal separately
+        style={{
+          padding: "12px 24px",
+          borderRadius: "12px",
+          border: "none",
+          backgroundColor: "#10B981",
+          color: "#fff",
+          fontWeight: "bold",
+          fontSize: 14,
+          cursor: "pointer",
+          transition: "all 0.2s ease",
+        }}
+        onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "#059669")}
+        onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "#10B981")}
+      >
+        Add Training
+      </button>
+    </div>
+  </DashboardBox>
+</div>
+
+</div>
+
 
       {/* Smaller placeholders globally */}
       <style>
@@ -221,7 +701,7 @@ useEffect(() => {
           display: "flex", justifyContent: "center", alignItems: "center", zIndex: 1000, padding: 16
         }}>
           <div style={{
-            background: "linear-gradient(145deg, rgba(255,255,255,0.95), rgba(245,245,245,0.85))",
+            background: "linear-gradient(145deg, #514949ff, #2d2d2d)",
             padding: 20, borderRadius: 16, maxWidth: 600, width: "100%",
             display: "flex", flexDirection: "column", gap: 20, color: "#1e3a8a",
             boxShadow: "0 10px 30px rgba(0,0,0,0.25)", fontSize: 13
@@ -233,10 +713,10 @@ useEffect(() => {
     display: "flex", 
     flexDirection: "column", 
     gap: 12, 
-    background: "linear-gradient(145deg, rgba(255,255,255,0.95), rgba(245,245,245,0.85))", 
     padding: 16, 
     borderRadius: 12, 
-    color: "#1E293C"  // ✅ make all text inside white
+    backgroundColor:"#2d2d2d",
+    color: "#fff"  // ✅ make all text inside white
   }}>
     <h2 style={{ fontWeight: "bold", fontSize: 18 }}>Match Details</h2>
     <input placeholder="Enter the match name, e.g., Liverpool vs Chelsea" name="match" value={formData.match} onChange={handleChange} style={glassInputStyle} />
@@ -277,10 +757,10 @@ useEffect(() => {
     display: "flex", 
     flexDirection: "column", 
     gap: 12, 
-    background: "linear-gradient(145deg, rgba(255,255,255,0.95), rgba(245,245,245,0.85))", 
+
     padding: 16, 
     borderRadius: 12, 
-    color: "#1E293C"
+    color: "#fff"
   }}>
     <h2 style={{ fontWeight: "bold", fontSize: 18 }}>What went well?</h2>
     {formData.didWell.map((_, idx) => (
@@ -295,10 +775,9 @@ useEffect(() => {
     display: "flex", 
     flexDirection: "column", 
     gap: 12, 
-    background: "linear-gradient(145deg, rgba(255,255,255,0.95), rgba(245,245,245,0.85))", 
     padding: 16, 
     borderRadius: 12, 
-    color: "#1E293C"
+    color: "#fff"
   }}>
     <h2 style={{ fontWeight: "bold", fontSize: 18 }}>Areas to improve</h2>
     {formData.couldImprove.map((_, idx) => (

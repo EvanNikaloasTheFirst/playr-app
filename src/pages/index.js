@@ -13,7 +13,7 @@ const GoogleFont = () => (
 
 export default function LoginPage() {
   return (
-    <div style={{ minHeight: "100vh", background: "linear-gradient(to bottom right, #1e3a8a, #0d9488)", fontFamily: "Arial, sans-serif", padding: 16 }}>
+    <div style={{ minHeight: "100vh", fontFamily: "Arial, sans-serif", borderRadius:"30px solid red"}}>
      <Navbar/>
 
       {/* Main Content */}
@@ -23,7 +23,7 @@ export default function LoginPage() {
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          background: "linear-gradient(to bottom right, #1e3a8a, #0d9488)",
+          background: "linear-gradient(to bottom right, #0a0a0a, #2d2d2d)",
           fontFamily: "Roboto, sans-serif",
 
         }}
@@ -37,7 +37,7 @@ export default function LoginPage() {
             <h1 style={{ fontSize: "2rem", fontWeight: "bold", color: "#fff", marginBottom: "8px" }}>
               Playr
             </h1>
-            <p style={{ color: "#bfdbfe", fontSize: "0.95rem" }}>Track your football performance</p>
+            <p style={{ color: "#fff", fontSize: "0.95rem" }}>Track your football performance</p>
           </div>
 
           {/* Card */}
