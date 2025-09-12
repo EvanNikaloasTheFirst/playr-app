@@ -1,4 +1,4 @@
-import { MongoClient, ObjectId } from "mongodb";
+import { MongoClient } from "mongodb";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "../auth/[...nextauth]"; // adjust path if casing differs
 
@@ -18,14 +18,36 @@ export default async function handler(req, res) {
 
     // GET performances
     if (req.method === "GET") {
-      const { recent } = req.query; // optional ?recent=true
-      let cursor = collection.find({ userId });
+      const { recent, season, batchSize } = req.query; 
+      let query = { userId };
+
+      // ✅ filter by season if provided
+      if (season) {
+        query.season = season; // e.g. "25/26"
+      }
+
+      let cursor = collection.find(query);
 
       if (recent === "true") {
-        cursor = cursor.sort({ _id: -1 }).limit(3); // 3 most recent inserted
+        cursor = cursor.sort({ _id: -1 }).limit(3);
+      } else {
+        cursor = cursor.sort({ date: 1 }); // default sort by match date
       }
 
       const performances = await cursor.toArray();
+
+      // ✅ if batchSize is provided, group results
+      if (batchSize) {
+        const size = parseInt(batchSize, 10);
+        if (!isNaN(size) && size > 0) {
+          const batches = [];
+          for (let i = 0; i < performances.length; i += size) {
+            batches.push(performances.slice(i, i + size));
+          }
+          return res.status(200).json(batches);
+        }
+      }
+
       return res.status(200).json(performances);
     }
 
@@ -34,7 +56,7 @@ export default async function handler(req, res) {
       const newPerf = {
         ...req.body,
         userId,
-        createdAt: new Date(), // optional but useful for sorting by date
+        createdAt: new Date(),
       };
       const result = await collection.insertOne(newPerf);
       return res.status(201).json({ ...newPerf, _id: result.insertedId });
