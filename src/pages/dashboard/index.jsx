@@ -3,6 +3,10 @@ import Navbar from "@/components/Utils/Navbar";
 import React, { useState, useEffect } from "react";
 import { useSession, signIn } from "next-auth/react";
 import DashboardBox from "@/components/dashboardComponents/dashboardBox";
+import { useMemo} from "react";
+
+import { useRouter } from "next/navigation";
+
 // Positions
 const positions = {
   Goalkeeper: ["Goalkeeper"],
@@ -18,6 +22,8 @@ export default function Dashboard() {
   const [modalType, setModalType] = useState(null); // "match" | "training"
   const [step, setStep] = useState(0);
     const [isMobile, setIsMobile] = useState(false);
+    const[trainings, setTrainings]=useState([])
+
 
   const [formData, setFormData] = useState({
     match: "", date: "", mainPosition: "Goalkeeper", subPosition: "Goalkeeper",
@@ -30,21 +36,67 @@ export default function Dashboard() {
   trainingType: "Gym",
   });
 const trainingTypes = ["Gym", "1-1", "Team Training"];
- const { data: session } = useSession();
+ const { data: session, status } = useSession();
+  const router = useRouter();
 
-const rating = 7.5; // Hardcoded for now
-const previousRatings = [6.5, 7.8, 5.5]; 
-const currentRating = 7.5;
+  useEffect(() => {
+    // If session is loading, do nothing
+    if (status === "loading") return;
+
+    // If no session, redirect
+    if (!session) {
+      router.push("/"); // Redirect to home or login page
+    }
+  }, [session, status, router]);
+
+  if (!session) {
+    // Optional: show a loading placeholder while redirecting
+    return <div>Redirecting...</div>;
+  }
+
+     useEffect(() => {
+
+
+  const fetchTrainings = async () => {
+    try {
+      const response = await fetch(`/api/trainings/trainings?userId=${encodeURIComponent(session.user.email)}`);
+      if (!response.ok) throw new Error("Failed to fetch trainings");
+
+      const data = await response.json();
+      setTrainings(data);
+    } catch (err) {
+      console.error("Error fetching trainings:", err);
+    }
+  };
+
+  fetchTrainings();
+}, [session]);
+
+// Sort and take last 3 trainings
+const sortedTrainings = useMemo(() => {
+  return [...trainings].sort((a, b) => new Date(b.trainingDate) - new Date(a.trainingDate));
+}, [trainings]);
+
+const recentTrainings = sortedTrainings.slice(0, 3);
+
+const currentRating = useMemo(() => {
+  if (recentTrainings.length === 0) return "N/A";
+
+  const sum = recentTrainings.reduce((acc, t) => {
+    const rating = Number(t.trainingRating); // convert to number
+    return acc + (isNaN(rating) ? 0 : rating);
+  }, 0);
+
+  return Math.round(sum / recentTrainings.length);
+}, [recentTrainings]);
+
+
 const getCircleColor = (rating) => {
   if (rating > 7) return "#006400"; // dark green
   if (rating > 6) return "#90EE90"; // light green
   return "#FF4C4C"; // red
 };
-// Determine circle color
-let circleColor = "";
-if (rating > 7) circleColor = "#006400"; // Dark green
-else if (rating > 6) circleColor = "#90EE90"; // Light green
-else circleColor = "#FF4C4C"; // Red
+
 
 // Set performances 
 useEffect(() => {
@@ -125,7 +177,6 @@ useEffect(() => {
 function getSeason(dateInput) {
   let year, month;
 
-  console.log("HEHEH", dateInput)
   if (!dateInput) return ""; // nothing selected yet
 
   if (typeof dateInput === "string") {
@@ -356,10 +407,12 @@ const handleSave = async () => {
     display: "grid",
     gridTemplateColumns: isMobile ? "1fr" : "repeat(3, 500px)",
     gridTemplateRows: isMobile ? "auto" : "auto auto",
-    gap: "24px",
+    gap: "34px",
     justifyItems: "center",
     margin: "0 auto",
     width: isMobile ? "90%" : "max-content",
+    position:"relative",
+    left:"20px"
   };
 
   return (
@@ -496,68 +549,92 @@ const handleSave = async () => {
   <div style={{ width: "100%", textAlign: "center" }}>
     <h3 style={{ color: "#fff", marginBottom: 8 }}>Training Form</h3>
     <DashboardBox color="lightgreen">
-<div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "24px" }}>
-  {/* Main big circle */}
-  <div
-    style={{
-      width: "160px",
-      height: "160px",
-      borderRadius: "50%",
-      border: "20px solid " + getCircleColor(currentRating),
-      display: "flex",
-      justifyContent: "center",
-      alignItems: "center",
-      fontSize: "48px",
-      fontWeight: "bold",
-      color: "#FFF",
-      backgroundColor: "#1a1a1a",
-      boxShadow: "0 4px 20px rgba(0,0,0,0.3)",
-    }}
-  >
-    {currentRating}
-  </div>
-
-  {/* Previous sessions */}
- <div style={{ display: "flex", gap: "16px" }}>
-  {previousRatings.map((rating, idx) => (
-    <div
-      key={idx}
-      style={{
-        display: "flex",
-        flexDirection: "column",
-        alignItems: "center",
-        gap: "4px", // space between circle and date
-      }}
-    >
-      {/* Circle with rating */}
+ <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "24px" }}>
+      {/* Main big circle */}
       <div
         style={{
-          width: "60px",
-          height: "60px",
+          width: "160px",
+          height: "160px",
           borderRadius: "50%",
-          border: "10px solid " + getCircleColor(rating),
+          border: `20px solid ${getCircleColor(currentRating)}`,
           display: "flex",
           justifyContent: "center",
           alignItems: "center",
-          fontSize: "18px",
+          fontSize: "48px",
           fontWeight: "bold",
           color: "#FFF",
           backgroundColor: "#1a1a1a",
-          boxShadow: "0 2px 10px rgba(0,0,0,0.25)",
+          boxShadow: "0 4px 20px rgba(0,0,0,0.3)",
         }}
       >
-        {rating}
+        {currentRating}
       </div>
 
-      {/* Hardcoded date */}
-      <span style={{ fontSize: "14px", color: "#000" }}>
-        {["08/01", "08/05", "08/08"][idx]}
-      </span>
-    </div>
-  ))}
-</div>
+      {/* Previous sessions */}
+      <div style={{ display: "flex", gap: "16px" }}>
+        {recentTrainings.length > 0
+          ? recentTrainings.map((training, idx) => (
+              <div
+                key={training._id}
+                style={{
+                  display: "flex",
+                  flexDirection: "column",
+                  alignItems: "center",
+                  gap: "4px",
+                }}
+              >
+                {/* Circle with rating */}
+                <div
+                  style={{
+                    width: "60px",
+                    height: "60px",
+                    borderRadius: "50%",
+                    border: `10px solid ${getCircleColor(training.trainingRating)}`,
+                    display: "flex",
+                    justifyContent: "center",
+                    alignItems: "center",
+                    fontSize: "18px",
+                    fontWeight: "bold",
+                    color: "#FFF",
+                    backgroundColor: "#1a1a1a",
+                    boxShadow: "0 2px 10px rgba(0,0,0,0.25)",
+                  }}
+                >
+                  {training.trainingRating}
+                </div>
 
-</div>
+                {/* Date */}
+                <span style={{ fontSize: "14px", color: "#FFF" }}>
+                  {new Date(training.trainingDate).toLocaleDateString("en-GB", {
+                    day: "2-digit",
+                    month: "2-digit",
+                  })}
+                </span>
+              </div>
+            ))
+          : ["N/A"].map((v, idx) => (
+              <div
+                key={idx}
+                style={{
+                  width: "60px",
+                  height: "60px",
+                  borderRadius: "50%",
+                  border: `10px solid #888`,
+                  display: "flex",
+                  justifyContent: "center",
+                  alignItems: "center",
+                  fontSize: "18px",
+                  fontWeight: "bold",
+                  color: "#FFF",
+                  backgroundColor: "#1a1a1a",
+                  boxShadow: "0 2px 10px rgba(0,0,0,0.25)",
+                }}
+              >
+                N/A
+              </div>
+            ))}
+      </div>
+    </div>
     </DashboardBox>
   </div>
 

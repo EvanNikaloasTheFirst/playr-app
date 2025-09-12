@@ -4,14 +4,27 @@ import { useEffect, useState } from "react";
 import Navbar from "@/components/Utils/Navbar";
 import { useSession, signIn } from "next-auth/react";
 import TrainingCard from "@/components/cards/TrainingCard";
-
+import { useRouter } from "next/navigation";
 export default function Training() {
-  const { data: session, status } = useSession();
+
   const [trainings, setTrainings] = useState([]);
   const [loading, setLoading] = useState(true);
   const [season, setSeason] = useState("25/26");
   const [columns, setColumns] = useState(4);
   const [selectedTraining, setSelectedTraining] = useState(null);
+
+  const { data: session, status } = useSession();
+    const router = useRouter();
+  
+    useEffect(() => {
+      // If session is loading, do nothing
+      if (status === "loading") return;
+  
+      // If no session, redirect
+      if (!session) {
+        router.push("/"); // Redirect to home or login page
+      }
+    }, [session, status, router]);
 
   // Responsive columns
   useEffect(() => {

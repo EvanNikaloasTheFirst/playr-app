@@ -3,6 +3,7 @@
 import { useMemo } from "react";
 import { motion } from "framer-motion";
 
+
 export default function TrainingCard({ training, onOpen }) {
   // Random card background color
   const bgColor = useMemo(() => {

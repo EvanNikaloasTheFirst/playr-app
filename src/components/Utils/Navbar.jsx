@@ -1,7 +1,7 @@
 "use client";
 import React from "react";
 import { usePathname } from "next/navigation";
-import { useSession } from "next-auth/react";
+import { useSession, signOut } from "next-auth/react";
 
 export default function Navbar() {
   const pathname = usePathname();
@@ -81,6 +81,27 @@ export default function Navbar() {
               </li>
             ))}
           </ul>
+        )}
+
+        {/* Right: Logout button if logged in */}
+        {session && pathname !== "/" && (
+          <button
+            onClick={() => signOut({ callbackUrl: "/" })}
+            style={{
+              padding: "6px 12px",
+              borderRadius: "8px",
+              border: "none",
+              backgroundColor: "#FF4C4C",
+              color: "#fff",
+              cursor: "pointer",
+              fontWeight: "bold",
+              transition: "background 0.2s",
+            }}
+            onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "#CC0000")}
+            onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "#FF4C4C")}
+          >
+            Logout
+          </button>
         )}
 
         {/* Right: Conditional info for home page */}

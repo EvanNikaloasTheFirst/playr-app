@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Navbar from "@/components/Utils/Navbar";
 import { useSession, signIn } from "next-auth/react";
 import PerformanceCard from "@/components/cards/PerformanceCard";
+import { useRouter } from "next/navigation";
 
 export default function Performances() {
   const { data: session, status } = useSession();
@@ -11,6 +12,17 @@ export default function Performances() {
   const [loading, setLoading] = useState(true);
   const [season, setSeason] = useState("25/26");
   const [columns, setColumns] = useState(4);
+
+      const router = useRouter();
+useEffect(() => {
+      // If session is loading, do nothing
+      if (status === "loading") return;
+  
+      // If no session, redirect
+      if (!session) {
+        router.push("/"); // Redirect to home or login page
+      }
+    }, [session, status, router]);
 
   // Modal state
   const [selectedPerf, setSelectedPerf] = useState(null);
