@@ -12,9 +12,9 @@ export default function Navbar() {
 
   // Menu links array
   const menuLinks = [
-    { name: "Performances", href: "/Performances" },
-    { name: "Profile", href: "/Profile" },
-    { name: "Training", href: "/Training" },
+    { name: "Performances", href: "/performances" },
+    { name: "Profile", href: "/profile" },
+    { name: "Training", href: "/training" },
   ];
 
   return (

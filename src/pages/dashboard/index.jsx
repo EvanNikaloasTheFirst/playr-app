@@ -1,5 +1,4 @@
 "use client";
-import PerformanceCard from "@/components/cards/PerformanceCard";
 import Navbar from "@/components/Utils/Navbar";
 import React, { useState, useEffect } from "react";
 import { useSession, signIn } from "next-auth/react";
@@ -16,15 +15,21 @@ export default function Dashboard() {
   const [performances, setPerformances] = useState([]);
   const [lastPerformance, setLastPerformance] = useState(null);
   const [showModal, setShowModal] = useState(false);
-  const [expandedPerformance, setExpandedPerformance] = useState(null);
+  const [modalType, setModalType] = useState(null); // "match" | "training"
   const [step, setStep] = useState(0);
     const [isMobile, setIsMobile] = useState(false);
 
   const [formData, setFormData] = useState({
     match: "", date: "", mainPosition: "Goalkeeper", subPosition: "Goalkeeper",
-    minutes: "", rating: "", matchOverview: "", didWell: ["", "", ""], couldImprove: ["", "", ""]
-  });
+    minutes: "", rating: "", matchOverview: "", didWell: ["", "", ""], couldImprove: ["", "", ""],
 
+  trainingDate: "",
+  trainingRating: "",
+  trainingDuration: "",
+  trainingSummary: "",
+  trainingType: "Gym",
+  });
+const trainingTypes = ["Gym", "1-1", "Team Training"];
  const { data: session } = useSession();
 
 const rating = 7.5; // Hardcoded for now
@@ -41,6 +46,7 @@ if (rating > 7) circleColor = "#006400"; // Dark green
 else if (rating > 6) circleColor = "#90EE90"; // Light green
 else circleColor = "#FF4C4C"; // Red
 
+// Set performances 
 useEffect(() => {
     if (!session) return;
 
@@ -115,11 +121,159 @@ useEffect(() => {
   }
 };
 
- const handleSave = async () => {
-  const newPerf = {
 
+function getSeason(dateInput) {
+  let year, month;
+
+  console.log("HEHEH", dateInput)
+  if (!dateInput) return ""; // nothing selected yet
+
+  if (typeof dateInput === "string") {
+    // case: "yyyy-mm-dd"
+    const parts = dateInput.split("-");
+    if (parts.length < 2) return "";
+    year = Number(parts[0]);
+    month = Number(parts[1]);
+  } else if (dateInput instanceof Date) {
+    // case: Date object
+    year = dateInput.getFullYear();
+    month = dateInput.getMonth() + 1;
+  } else {
+    return "";
+  }
+
+  // season logic
+  if (month >= 7) {
+    const startYear = year % 100;
+    const endYear = (year + 1) % 100;
+    return `${startYear.toString().padStart(2, "0")}/${endYear
+      .toString()
+      .padStart(2, "0")}`;
+  } else {
+    const startYear = (year - 1) % 100;
+    const endYear = year % 100;
+    return `${startYear.toString().padStart(2, "0")}/${endYear
+      .toString()
+      .padStart(2, "0")}`;
+  }
+}
+
+
+
+const handleSaveTraining = async () => {
+  // ✅ Basic validation
+  if (!formData.trainingDate) {
+    alert("Please select a training date.");
+    return;
+  }
+  if (!formData.trainingDuration || isNaN(formData.trainingDuration)) {
+    alert("Please enter a valid training duration.");
+    return;
+  }
+  if (
+    !formData.trainingRating ||
+    isNaN(formData.trainingRating) ||
+    formData.trainingRating < 1 ||
+    formData.trainingRating > 10
+  ) {
+    alert("Please provide a training rating between 1 and 10.");
+    return;
+  }
+  if (!formData.trainingType) {
+    alert("Please select a training type.");
+    return;
+  }
+  if (!formData.trainingSummary.trim()) {
+    alert("Please enter a training summary.");
+    return;
+  }
+
+  const newTraining = {
+    userId: session.user.email,
+    trainingDate: formData.trainingDate,
+    trainingDuration: Number(formData.trainingDuration),
+    trainingRating: Number(formData.trainingRating),
+    trainingType: formData.trainingType,
+    trainingSummary: formData.trainingSummary.trim(),
+  };
+
+  try {
+    const response = await fetch("/api/trainings/trainings", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(newTraining),
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text(); // get the response body
+      console.error("❌ Save training failed:", errorText);
+      throw new Error("Failed to save training");
+    }
+
+    // ✅ Reset form
+    setFormData(prev => ({
+      ...prev,
+      trainingDate: "",
+      trainingRating: "",
+      trainingDuration: "",
+      trainingSummary: "",
+      trainingType: "Gym",
+    }));
+
+    setShowModal(false);
+    setStep(0);
+  } catch (error) {
+    console.error("Error saving training:", error);
+    alert("Something went wrong while saving your training. Please try again.");
+  }
+};
+
+
+const handleSave = async () => {
+  // ✅ Validation
+  if (!formData.match.trim()) {
+    alert("Match name is required");
+    return;
+  }
+
+  if (!formData.date) {
+    alert("Date is required");
+    return;
+  }
+
+  if (!formData.minutes || isNaN(formData.minutes) || formData.minutes < 0 || formData.minutes > 120) {
+    alert("Minutes must be a number between 0 and 120");
+    return;
+  }
+
+  if (!formData.rating || isNaN(formData.rating) || formData.rating < 1 || formData.rating > 10) {
+    alert("Rating must be a number between 1 and 10");
+    return;
+  }
+
+  if (!formData.matchOverview.trim()) {
+    alert("Match overview is required");
+    return;
+  }
+
+  // Optional: validate at least one "did well" and "could improve" entry
+  if (formData.didWell.every((item) => !item.trim())) {
+    alert("Please enter at least one thing you did well");
+    return;
+  }
+
+  if (formData.couldImprove.every((item) => !item.trim())) {
+    alert("Please enter at least one thing you could improve");
+    return;
+  }
+
+  console.log(formData.date)
+
+  // ✅ If validation passes, continue
+  const newPerf = {
     match: formData.match,
     date: formData.date,
+    season: getSeason(formData.date),
     position: `${formData.mainPosition} - ${formData.subPosition}`,
     minutes: Number(formData.minutes),
     rating: Number(formData.rating),
@@ -139,13 +293,14 @@ useEffect(() => {
 
     const savedPerf = await response.json();
 
-    // ✅ append new one to state
     setPerformances((prev) => [...prev, savedPerf]);
 
-    // ✅ reset form
+    
+
     setFormData({
       match: "",
       date: "",
+      season:"",
       mainPosition: "Goalkeeper",
       subPosition: "Goalkeeper",
       minutes: "",
@@ -592,7 +747,7 @@ useEffect(() => {
 
       {/* Button */}
       <button
-        onClick={() => setShowModal(true)}
+        onClick={() => setModalType('match')}
         style={{
           padding: "12px 24px",
           borderRadius: "12px",
@@ -658,7 +813,7 @@ useEffect(() => {
 
       {/* Button */}
       <button
-        onClick={() => setShowModal(true)} // Or handle training modal separately
+        onClick={() => setModalType('training')}
         style={{
           padding: "12px 24px",
           borderRadius: "12px",
@@ -694,7 +849,7 @@ useEffect(() => {
       </style>
 
       {/* Modal */}
-      {showModal && (
+{modalType === "match" && (
         <div style={{
           position: "fixed", top: 0, left: 0, width: "100%", height: "100%",
           backgroundColor: "rgba(0,0,0,0.75)", backdropFilter: "blur(8px)",
@@ -795,10 +950,155 @@ useEffect(() => {
               {step === 2 && <button onClick={handleSave} style={{ padding: "8px 16px", borderRadius: 10, border: "none", backgroundColor: "#16A34A", color: "#fff", fontWeight: "bold", fontSize: 12 }}>Save</button>}
             </div>
 
-            <button onClick={() => { setShowModal(false); setStep(0); }} style={{ alignSelf: "center", marginTop: 6, padding: "8px 16px", borderRadius: 10, border: "none", backgroundColor: "#F87171", color: "#fff", fontWeight: "bold", fontSize: 12 }}>Cancel</button>
-          </div>
+<button onClick={() => { setShowModal(false); setStep(0); setModalType(null); }}
+  style={{ alignSelf: "center", marginTop: 6, padding: "8px 16px", borderRadius: 10,
+           border: "none", backgroundColor: "#F87171", color: "#fff",
+           fontWeight: "bold", fontSize: 12 }}>
+  Cancel
+</button>
+     
+    </div>
         </div>
       )}
+
+      
+{modalType === "training" && (
+<div
+  style={{
+    position: "fixed",
+    top: 0,
+    left: 0,
+    width: "100%",
+    height: "100%",
+    backgroundColor: "rgba(0,0,0,0.75)",
+    backdropFilter: "blur(8px)",
+    display: "flex",
+    justifyContent: "center",
+    alignItems: "center",
+    zIndex: 1000,
+    padding: 16,
+  }}
+>
+  <div
+    style={{
+      background: "linear-gradient(145deg, #514949ff, #2d2d2d)",
+      padding: 20,
+      borderRadius: 16,
+      maxWidth: 600,
+      width: "100%",
+      display: "flex",
+      flexDirection: "column",
+      gap: 20,
+      color: "#1e3a8a",
+      boxShadow: "0 10px 30px rgba(0,0,0,0.25)",
+      fontSize: 13,
+    }}
+  >
+    {/* Step 1: Training Info */}
+    <div
+      style={{
+        display: "flex",
+        flexDirection: "column",
+        gap: 12,
+        padding: 16,
+        borderRadius: 12,
+        backgroundColor: "#2d2d2d",
+        color: "#fff",
+      }}
+    >
+      <h2 style={{ fontWeight: "bold", fontSize: 18 }}>Training Details</h2>
+      <input
+        type="date"
+        name="trainingDate"
+        value={formData.trainingDate}
+        onChange={handleChange}
+        style={glassInputStyle}
+      />
+      <input
+        type="time"
+        name="trainingDuration"
+        value={formData.trainingDuration}
+        onChange={handleChange}
+        style={glassInputStyle}
+      />
+      <input
+        type="number"
+        name="trainingRating"
+        placeholder="Rating ?/10"
+        value={formData.trainingRating}
+        onChange={handleChange}
+        style={glassInputStyle}
+        min="1"
+        max="10"
+      />
+      <select
+        name="trainingType"
+        value={formData.trainingType}
+        onChange={handleChange}
+        style={glassInputStyle}
+      >
+        {trainingTypes.map((type) => (
+          <option key={type} value={type}>
+            {type}
+          </option>
+        ))}
+      </select>
+      <textarea
+        placeholder="Training summary: drills, exercises, focus areas"
+        name="trainingSummary"
+        value={formData.trainingSummary}
+        onChange={handleChange}
+        style={{ ...glassInputStyle, resize: "none", minHeight: 80 }}
+      />
+    </div>
+
+    {/* Buttons */}
+    <div style={{ display: "flex", justifyContent: "space-between", marginTop: 10 }}>
+      <button
+        onClick={handleSaveTraining}
+        style={{
+          padding: "8px 16px",
+          borderRadius: 10,
+          border: "none",
+          backgroundColor: "#16A34A",
+          color: "#fff",
+          fontWeight: "bold",
+          fontSize: 12,
+        }}
+      >
+        Save
+      </button>
+    </div>
+
+    {/* Cancel button */}
+    <button
+      onClick={() => {
+        setShowModal(false);
+        setStep(0);
+        setModalType(null);
+      }}
+      style={{
+        alignSelf: "center",
+        marginTop: 6,
+        padding: "8px 16px",
+        borderRadius: 10,
+        border: "none",
+        backgroundColor: "#F87171",
+        color: "#fff",
+        fontWeight: "bold",
+        fontSize: 12,
+      }}
+    >
+      Cancel
+    </button>
+  </div>
+</div>
+
+)}
+
+
+
+
     </div>
   );
 }
