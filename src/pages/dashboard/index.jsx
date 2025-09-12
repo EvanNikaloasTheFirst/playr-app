@@ -158,6 +158,17 @@ function getSeason(dateInput) {
   }
 }
 
+function convertToMinutes(timeStr) {
+  if (!timeStr) return 0;
+
+  const [hours, minutes] = timeStr.split(":").map(Number);
+
+  if (isNaN(hours) || isNaN(minutes)) {
+    throw new Error("Invalid time format. Expected hh:mm");
+  }
+
+  return hours * 60 + minutes;
+}
 
 
 const handleSaveTraining = async () => {
@@ -166,7 +177,8 @@ const handleSaveTraining = async () => {
     alert("Please select a training date.");
     return;
   }
-  if (!formData.trainingDuration || isNaN(formData.trainingDuration)) {
+  if (!formData.trainingDuration ) {
+    console.log(formData.trainingDuration)
     alert("Please enter a valid training duration.");
     return;
   }
@@ -191,10 +203,11 @@ const handleSaveTraining = async () => {
   const newTraining = {
     userId: session.user.email,
     trainingDate: formData.trainingDate,
-    trainingDuration: Number(formData.trainingDuration),
-    trainingRating: Number(formData.trainingRating),
+    trainingDuration: convertToMinutes(formData.trainingDuration),
+    trainingRating: (formData.trainingRating),
     trainingType: formData.trainingType,
     trainingSummary: formData.trainingSummary.trim(),
+    season: getSeason(formData.trainingDate),
   };
 
   try {
@@ -221,6 +234,7 @@ const handleSaveTraining = async () => {
     }));
 
     setShowModal(false);
+    setModalType('')
     setStep(0);
   } catch (error) {
     console.error("Error saving training:", error);
@@ -311,6 +325,7 @@ const handleSave = async () => {
     });
 
     setShowModal(false);
+    setModalType('')
     setStep(0);
   } catch (error) {
     console.error("Error saving performance:", error);

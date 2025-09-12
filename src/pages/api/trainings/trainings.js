@@ -1,22 +1,30 @@
 // src/pages/api/trainings/trainings.js
 import { dbConnect } from "../lib/mongodb";
+import { MongoClient, ObjectId } from "mongodb";
 import Training from "@/models/training";
+import { getServerSession } from "next-auth/next";
+import { authOptions } from "../auth/[...nextauth]"; // adjust path if casing differs
+const client = new MongoClient(process.env.MONGODB_URI);
 
 export default async function handler(req, res) {
-  await dbConnect();
+ await client.connect();
+  const db = client.db("playr");
+    const collection = db.collection("trainings");
+    const session = await getServerSession(req, res, authOptions);
+   const userId = session.user?.email;
+    if (!userId) return res.status(400).json({ error: "User email missing" });
 
   if (req.method === "POST") {
     try {
-      const body = req.body;
 
-      if (!body.userId) {
-        return res.status(400).json({ error: "Missing userId" });
-      }
+      const training = {
+        ...req.body,
+        userId,
+        createdAt: new Date(), // optional but useful for sorting by date
+      };
+      const result = await collection.insertOne(training);
+      return res.status(201).json({ ...training, _id: result.insertedId });
 
-      const training = new Training(body);
-      await training.save();
-
-      return res.status(201).json(training);
     } catch (err) {
             //   console.log("❌ Training POST error:", err);  // <-- log the full error÷÷
             console.log("Trainign POST Error")
