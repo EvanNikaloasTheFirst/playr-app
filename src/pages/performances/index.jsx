@@ -119,7 +119,7 @@ useEffect(() => {
           <option value="26/27">26/27</option>
         </select>
 
-        {session ? (
+        {loading ? (
           <p>Loading performances...</p>
         ) : performances.length === 0 ? (
           <p>No performances found for {season}</p>
