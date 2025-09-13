@@ -60,28 +60,15 @@ useEffect(() => {
     fetchPerformances();
   }, [session, season]);
 
-  if (status === "loading") return <div>Loading session...</div>;
-  if (!session)
-    return (
-      <div style={{ padding: "24px", textAlign: "center" }}>
-        <Navbar />
-        <p>You must be signed in to view performances.</p>
-        <button
-          style={{
-            backgroundColor: "#3b82f6",
-            color: "#fff",
-            padding: "8px 16px",
-            borderRadius: "8px",
-            border: "none",
-            cursor: "pointer",
-            marginTop: "12px",
-          }}
-          onClick={() => signIn()}
-        >
-          Sign In
-        </button>
-      </div>
-    );
+
+   // Redirect if not logged in
+    useEffect(() => {
+      if (status === "loading") return;
+      if (!session) {
+        router.push("/");
+      }
+    }, [session, status, router]);
+  
 
   const handleOpen = (perf) => setSelectedPerf(perf);
   const handleClose = () => setSelectedPerf(null);
@@ -96,7 +83,18 @@ useEffect(() => {
     >
       <Navbar />
 
-      <div style={{ padding: "24px", textAlign: "center" }}>
+      <div
+    style={{
+      width: "75%",
+      maxWidth:"900px",
+      padding: "20px",
+      position:"relative",
+      margin:"0 auto", 
+      borderRadius: "16px",
+      background: "rgba(255,255,255,0.05)",
+      boxShadow: "0 8px 20px rgba(0,0,0,0.4)",
+    }}
+  >
         <h1
           style={{ fontSize: "28px", fontWeight: "bold", marginBottom: "16px" }}
         >
@@ -121,7 +119,7 @@ useEffect(() => {
           <option value="26/27">26/27</option>
         </select>
 
-        {loading ? (
+        {session ? (
           <p>Loading performances...</p>
         ) : performances.length === 0 ? (
           <p>No performances found for {season}</p>
@@ -151,7 +149,7 @@ useEffect(() => {
       position: "fixed",
       top: 0,
       left: 0,
-      width: "100vw",
+      width: "95%",
       height: "100vh",
       backgroundColor: "rgba(0,0,0,0.85)",
       display: "flex",

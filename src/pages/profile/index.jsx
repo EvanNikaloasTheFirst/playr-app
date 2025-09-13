@@ -2,20 +2,21 @@
 import Navbar from "@/components/Utils/Navbar";
 import { useSession } from "next-auth/react";
 import { useEffect, useState, useMemo } from "react";
+import { useRouter } from "next/navigation";
 
 export default function Profile() {
   const { data: session, status } = useSession();
+  const router = useRouter();
 
   const [bio, setBio] = useState("");
-  const [goals, setGoals] = useState([]); // now an array
+  const [goals, setGoals] = useState([]); // array of goals
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [editing, setEditing] = useState(false);
-
   const [performances, setPerformances] = useState([]);
   const [trainings, setTrainings] = useState([]);
 
-  // 🎨 Random colors for stats
+  // Random colors for stats
   const colors = [
     "linear-gradient(135deg, #ff7eb3, #ff758c)",
     "linear-gradient(135deg, #6a11cb, #2575fc)",
@@ -26,10 +27,16 @@ export default function Profile() {
   ];
   const getRandomColor = () => colors[Math.floor(Math.random() * colors.length)];
 
-  // ✅ Fetch profile info
+  // Redirect if session is invalid
+  useEffect(() => {
+    if (status === "unauthenticated") {
+      router.push("/");
+    }
+  }, [status, router]);
+
+  // Fetch profile info
   useEffect(() => {
     if (!session) return;
-
     const fetchProfile = async () => {
       try {
         const res = await fetch("/api/profiles/profiles");
@@ -44,32 +51,28 @@ export default function Profile() {
         setLoading(false);
       }
     };
-
     fetchProfile();
   }, [session]);
 
-  // ✅ Fetch performances + trainings
+  // Fetch performances + trainings
   useEffect(() => {
     if (!session) return;
-
     const fetchData = async () => {
       try {
         const [perfRes, trainRes] = await Promise.all([
           fetch(`/api/performances/performances?userId=${encodeURIComponent(session.user.email)}`),
           fetch(`/api/trainings/trainings?userId=${encodeURIComponent(session.user.email)}`),
         ]);
-
         if (perfRes.ok) setPerformances(await perfRes.json());
         if (trainRes.ok) setTrainings(await trainRes.json());
       } catch (err) {
         console.error("Error fetching stats:", err);
       }
     };
-
     fetchData();
   }, [session]);
 
-  // ✅ Save profile
+  // Save profile
   const handleSave = async () => {
     setSaving(true);
     try {
@@ -78,9 +81,7 @@ export default function Profile() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ bio, goals }),
       });
-
       if (!res.ok) throw new Error("Failed to save profile");
-
       alert("✅ Profile updated!");
       setEditing(false);
     } catch (err) {
@@ -91,7 +92,7 @@ export default function Profile() {
     }
   };
 
-  // ✅ Stats
+  // Stats
   const totalMatches = performances.length;
   const totalMinutes = performances.reduce((sum, p) => sum + (p.minutes || 0), 0);
   const avgMatchRating = useMemo(() => {
@@ -107,7 +108,7 @@ export default function Profile() {
     return (sum / trainings.length).toFixed(2);
   }, [trainings]);
 
-  // ✅ Manage goals editing
+  // Manage goals editing
   const addGoal = () => setGoals([...goals, ""]);
   const updateGoal = (i, value) => {
     const updated = [...goals];
@@ -117,7 +118,6 @@ export default function Profile() {
   const removeGoal = (i) => setGoals(goals.filter((_, idx) => idx !== i));
 
   if (status === "loading" || loading) return <p>Loading...</p>;
-  if (!session) return <p>You need to log in to view your profile.</p>;
 
   return (
     <div style={{ padding: "20px", color: "#fff", fontFamily: "sans-serif" }}>

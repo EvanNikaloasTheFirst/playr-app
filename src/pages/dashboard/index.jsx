@@ -145,7 +145,7 @@ export default function Dashboard() {
     margin: "0 auto",
     width: isMobile ? "90%" : "max-content",
     position:"relative",
-    left:"20px"
+
   };
 
 

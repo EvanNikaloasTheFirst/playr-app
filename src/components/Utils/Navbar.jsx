@@ -1,16 +1,15 @@
 "use client";
-import React from "react";
+
+import React, { useState } from "react";
 import { usePathname } from "next/navigation";
 import { useSession, signOut } from "next-auth/react";
 
 export default function Navbar() {
   const pathname = usePathname();
   const { data: session } = useSession();
+  const [menuOpen, setMenuOpen] = useState(false);
 
-  // Determine link for Playr logo
   const homeLink = session ? "/dashboard" : "/";
-
-  // Menu links array
   const menuLinks = [
     { name: "Performances", href: "/performances" },
     { name: "Profile", href: "/profile" },
@@ -18,107 +17,191 @@ export default function Navbar() {
   ];
 
   return (
-    <nav
-      style={{
-        padding: "12px 24px",
-        display: "flex",
-        justifyContent: "center",
-        alignItems: "center",
-        backgroundColor: "rgba(0,0,0,0.2)",
-        backdropFilter: "blur(6px)",
-        borderRadius: "10px",
-        maxWidth: "1200px",
-        margin: "0 auto 20px",
-        color: "#fff",
-      }}
-    >
-      <div
-        style={{
-          display: "flex",
-          alignItems: "center",
-          width: "100%",
-          justifyContent: "space-between",
-        }}
-      >
-        {/* Left: Logo */}
-        <a
-          href={homeLink}
-          style={{
-            fontSize: "20px",
-            fontFamily: "Roboto, sans-serif",
-            fontWeight: "bold",
-            margin: 0,
-            color: "#fff",
-            textDecoration: "none",
-          }}
-        >
+    <nav className="navbar">
+      <div className="nav-container">
+        {/* Logo */}
+        <a href={homeLink} className="logo">
           Playr
         </a>
 
-        {/* Middle: Menu (only show if NOT home page) */}
+        {/* Desktop Menu */}
         {pathname !== "/" && (
-          <ul
-            style={{
-              display: "flex",
-              gap: "24px",
-              listStyle: "none",
-              margin: 0,
-              padding: 0,
-            }}
-          >
+          <ul className="desktop-menu">
             {menuLinks.map((link) => (
               <li key={link.href}>
-                <a
-                  href={link.href}
-                  style={{
-                    color: "#fff",
-                    textDecoration: "none",
-                    cursor: "pointer",
-                  }}
-                >
-                  {link.name}
-                </a>
+                <a href={link.href}>{link.name}</a>
               </li>
             ))}
           </ul>
         )}
 
-        {/* Right: Logout button if logged in */}
-        {session && pathname !== "/" && (
+        {/* Mobile Hamburger */}
+        {pathname !== "/" && (
           <button
-            onClick={() => signOut({ callbackUrl: "/" })}
-            style={{
-              padding: "6px 12px",
-              borderRadius: "8px",
-              border: "none",
-              backgroundColor: "#FF4C4C",
-              color: "#fff",
-              cursor: "pointer",
-              fontWeight: "bold",
-              transition: "background 0.2s",
-            }}
-            onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "#CC0000")}
-            onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "#FF4C4C")}
+            className={`hamburger ${menuOpen ? "open" : ""}`}
+            onClick={() => setMenuOpen(!menuOpen)}
           >
-            Logout
+            <span />
+            <span />
+            <span />
           </button>
         )}
 
-        {/* Right: Conditional info for home page */}
-        {pathname === "/" && (
-          <div
-            style={{
-              textAlign: "right",
-              maxWidth: "280px",
-              fontSize: "0.9rem",
-            }}
-          >
-            <p style={{ fontWeight: "bold", marginBottom: "4px" }}>
-              What is Playr?
-            </p>
-          </div>
+        {/* Logout */}
+        {session && pathname !== "/" && (
+          <button onClick={() => signOut({ callbackUrl: "/" })} className="logout">
+            Logout
+          </button>
         )}
       </div>
+
+      {/* Mobile Dropdown */}
+      {menuOpen && (
+        <ul className="mobile-menu">
+          {menuLinks.map((link) => (
+            <li key={link.href}>
+              <a href={link.href} onClick={() => setMenuOpen(false)}>
+                {link.name}
+              </a>
+            </li>
+          ))}
+        </ul>
+      )}
+
+      <style jsx>{`
+        .navbar {
+          padding: 12px 24px;
+          display: flex;
+          justify-content: center;
+          background-color: black;
+          border-radius: 10px;
+          max-width: 1200px;
+          margin: 0 auto 20px;
+          color: #fff;
+          position: relative;
+        }
+
+        .nav-container {
+          display: flex;
+          align-items: center;
+          width: 100%;
+          justify-content: space-between;
+        }
+
+        .logo {
+          font-size: 20px;
+          font-weight: bold;
+          color: #fff;
+          text-decoration: none;
+        }
+
+        .desktop-menu {
+          display: flex;
+          gap: 24px;
+          list-style: none;
+          margin: 0;
+          padding: 0;
+        }
+
+        .desktop-menu a {
+          color: #fff;
+          text-decoration: none;
+        }
+
+        .hamburger {
+          display: none;
+          flex-direction: column;
+          justify-content: space-between;
+          width: 24px;
+          height: 18px;
+          background: transparent;
+          border: none;
+          cursor: pointer;
+          padding: 0;
+        }
+
+        .hamburger span {
+          display: block;
+          height: 3px;
+          width: 100%;
+          background: #fff;
+          border-radius: 2px;
+          transition: all 0.3s ease;
+        }
+
+        .hamburger.open span:nth-child(1) {
+          transform: rotate(45deg) translate(5px, 5px);
+        }
+        .hamburger.open span:nth-child(2) {
+          opacity: 0;
+        }
+        .hamburger.open span:nth-child(3) {
+          transform: rotate(-45deg) translate(5px, -5px);
+        }
+
+        .logout {
+          padding: 6px 12px;
+          border-radius: 8px;
+          border: none;
+          background-color: #ff4c4c;
+          color: #fff;
+          cursor: pointer;
+          font-weight: bold;
+          transition: background 0.2s;
+          margin-left: 12px;
+        }
+
+        .logout:hover {
+          background-color: #cc0000;
+        }
+
+        .mobile-menu {
+          list-style: none;
+          padding: 12px;
+          margin-top: 10px;
+          display: flex;
+          flex-direction: column;
+          gap: 12px;
+          background-color: black;
+          border-radius: 8px;
+          z-index: 1000;
+          position: absolute;
+          top: 60px;
+          left: 0;
+          right: 0;
+          animation: fadeIn 0.3s ease-in-out;
+        }
+
+        .mobile-menu a {
+          color: #fff;
+          text-decoration: none;
+          padding: 8px 12px;
+          display: block;
+        }
+
+        @media (max-width: 768px) {
+          .desktop-menu {
+            display: none;
+          }
+          .hamburger {
+            display: flex;
+          }
+          .logout {
+            margin-left: 8px;
+          }
+        }
+
+        @keyframes fadeIn {
+          0% {
+            opacity: 0;
+            transform: translateY(-10px);
+          }
+          100% {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+      `}</style>
     </nav>
   );
 }
