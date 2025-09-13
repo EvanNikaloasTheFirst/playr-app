@@ -227,6 +227,53 @@ const handleSaveTraining = async () => {
   }
 };
 
+const handleSavePerformance = async () => {
+  if (!formData.match || !formData.date || !formData.minutes || !formData.rating) {
+    alert("Please fill in all required fields!");
+    return;
+  }
+
+  try {
+    const res = await fetch("/api/performances/performances", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(formData),
+    });
+
+    if (!res.ok) throw new Error("Failed to save performance");
+
+    const savedPerf = await res.json();
+
+    // Update local state
+    setPerformances((prev) => [savedPerf, ...prev]);
+    setLastPerformance(savedPerf);
+
+    // Reset modal
+    setShowModal(false);
+    setStep(0);
+    setModalType(null);
+
+    // Reset formData fields related to match
+    setFormData((prev) => ({
+      ...prev,
+      match: "",
+      date: "",
+      mainPosition: "Goalkeeper",
+      subPosition: "Goalkeeper",
+      minutes: "",
+      rating: "",
+      matchOverview: "",
+      didWell: ["", "", ""],
+      couldImprove: ["", "", ""],
+    }));
+  } catch (err) {
+    console.error(err);
+    alert("Error saving performance");
+  }
+};
+
 
 return (
 
@@ -859,7 +906,7 @@ return (
             <div style={{ display: "flex", justifyContent: "space-between", marginTop: 10 }}>
               {step > 0 && <button onClick={() => setStep(prev => prev - 1)} style={{ padding: "8px 16px", borderRadius: 10, border: "none", backgroundColor: "#ccc", color: "#1e3a8a", fontWeight: "bold", fontSize: 12 }}>Back</button>}
               {step < 2 && <button onClick={() => setStep(prev => prev + 1)} style={{ padding: "8px 16px", borderRadius: 10, border: "none", backgroundColor: "#2563EB", color: "#fff", fontWeight: "bold", fontSize: 12 }}>Next</button>}
-              {step === 2 && <button onClick={handleSave} style={{ padding: "8px 16px", borderRadius: 10, border: "none", backgroundColor: "#16A34A", color: "#fff", fontWeight: "bold", fontSize: 12 }}>Save</button>}
+              {step === 2 && <button onClick={handleSavePerformance} style={{ padding: "8px 16px", borderRadius: 10, border: "none", backgroundColor: "#16A34A", color: "#fff", fontWeight: "bold", fontSize: 12 }}>Save</button>}
             </div>
 
 <button onClick={() => { setShowModal(false); setStep(0); setModalType(null); }}
