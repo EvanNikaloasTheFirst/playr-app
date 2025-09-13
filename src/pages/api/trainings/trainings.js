@@ -1,4 +1,4 @@
-import { MongoClient } from "mongodb";
+import { MongoClient, ObjectId } from "mongodb";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "../auth/[...nextauth]"; // adjust path if needed
 
@@ -37,11 +37,26 @@ export default async function handler(req, res) {
 
       return res.status(200).json(trainings);
 
+    } else if (req.method === "DELETE") {
+      const { id } = req.query;
+      if (!id) return res.status(400).json({ error: "Missing training ID" });
+
+      const result = await collection.deleteOne({
+        _id: new ObjectId(id),
+        userId,
+      });
+
+      if (result.deletedCount === 0) {
+        return res
+          .status(404)
+          .json({ error: "Training not found or not authorized to delete" });
+      }
+
+      return res.status(200).json({ success: true });
     } else {
-      res.setHeader("Allow", ["GET", "POST"]);
+      res.setHeader("Allow", ["GET", "POST", "DELETE"]);
       return res.status(405).end(`Method ${req.method} Not Allowed`);
     }
-
   } catch (err) {
     console.error("Training API error:", err);
     return res.status(500).json({ error: err.message });

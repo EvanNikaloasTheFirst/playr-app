@@ -185,11 +185,50 @@ const glassInputStyle = {
   transition: "all 0.2s ease",
 };
 
+function getSeason(dateStr) {
+  const date = new Date(dateStr);
+  let year = date.getFullYear();
+  let month = date.getMonth() + 1; // Jan = 0 → +1 makes Jan=1
+
+  if (month >= 8) {
+    // August → December
+    return `${String(year).slice(-2)}/${String(year + 1).slice(-2)}`;
+  } else {
+    // January → July
+    return `${String(year - 1).slice(-2)}/${String(year).slice(-2)}`;
+  }
+}
+
+function durationToMinutes(hhmm) {
+  if (!hhmm || !hhmm.includes(":")) return 0;
+  const [hours, minutes] = hhmm.split(":").map(Number);
+  return hours * 60 + minutes;
+}
+
+// ⏱️ Convert total minutes → "HH:MM"
+function minutesToDuration(minutes) {
+  if (typeof minutes !== "number" || isNaN(minutes)) return "00:00";
+  const h = String(Math.floor(minutes / 60)).padStart(2, "0");
+  const m = String(minutes % 60).padStart(2, "0");
+  return `${h}:${m}`;
+}
+
 const handleSaveTraining = async () => {
   if (!formData.trainingDate || !formData.trainingRating || !formData.trainingDuration) {
     alert("Please fill in all required fields!");
     return;
   }
+
+  // ✅ Only pick training-related fields
+  const payload = {
+    trainingDate: formData.trainingDate,
+    trainingRating: formData.trainingRating,
+    trainingDuration: durationToMinutes(formData.trainingDuration),
+    trainingSummary: formData.trainingSummary,
+    trainingType: formData.trainingType,
+    userId: session.user.email, // attach user ID
+    season:getSeason(formData.trainingDate)
+  };
 
   try {
     const res = await fetch("/api/trainings/trainings", {
@@ -197,7 +236,7 @@ const handleSaveTraining = async () => {
       headers: {
         "Content-Type": "application/json",
       },
-      body: JSON.stringify(formData),
+      body: JSON.stringify(payload),
     });
 
     if (!res.ok) throw new Error("Failed to save training");
@@ -227,47 +266,44 @@ const handleSaveTraining = async () => {
   }
 };
 
+
 const handleSavePerformance = async () => {
   if (!formData.match || !formData.date || !formData.minutes || !formData.rating) {
     alert("Please fill in all required fields!");
     return;
   }
 
+  const payload = {
+    match: formData.match,
+    date: formData.date,
+    mainPosition: formData.mainPosition,
+    subPosition: formData.subPosition,
+    minutes: formData.minutes,
+    rating: formData.rating,
+    matchOverview: formData.matchOverview,
+    didWell: formData.didWell,
+    couldImprove: formData.couldImprove,
+    userId: session.user.email,
+    season:getSeason(formData.date)
+  };
+
   try {
     const res = await fetch("/api/performances/performances", {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(formData),
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
     });
 
     if (!res.ok) throw new Error("Failed to save performance");
 
     const savedPerf = await res.json();
-
-    // Update local state
     setPerformances((prev) => [savedPerf, ...prev]);
     setLastPerformance(savedPerf);
 
-    // Reset modal
     setShowModal(false);
     setStep(0);
     setModalType(null);
 
-    // Reset formData fields related to match
-    setFormData((prev) => ({
-      ...prev,
-      match: "",
-      date: "",
-      mainPosition: "Goalkeeper",
-      subPosition: "Goalkeeper",
-      minutes: "",
-      rating: "",
-      matchOverview: "",
-      didWell: ["", "", ""],
-      couldImprove: ["", "", ""],
-    }));
   } catch (err) {
     console.error(err);
     alert("Error saving performance");
@@ -906,7 +942,7 @@ return (
             <div style={{ display: "flex", justifyContent: "space-between", marginTop: 10 }}>
               {step > 0 && <button onClick={() => setStep(prev => prev - 1)} style={{ padding: "8px 16px", borderRadius: 10, border: "none", backgroundColor: "#ccc", color: "#1e3a8a", fontWeight: "bold", fontSize: 12 }}>Back</button>}
               {step < 2 && <button onClick={() => setStep(prev => prev + 1)} style={{ padding: "8px 16px", borderRadius: 10, border: "none", backgroundColor: "#2563EB", color: "#fff", fontWeight: "bold", fontSize: 12 }}>Next</button>}
-              {step === 2 && <button onClick={handleSavePerformance} style={{ padding: "8px 16px", borderRadius: 10, border: "none", backgroundColor: "#16A34A", color: "#fff", fontWeight: "bold", fontSize: 12 }}>Save</button>}
+              {step === 2 && <button onClick={handleSavePerformance} style={{ padding: "8px 16px", borderRadius: 10, border: "none", backgroundColor: "#16A34A", color: "#fff", fontWeight: "bold", fontSize: 12 }}>Save Match</button>}
             </div>
 
 <button onClick={() => { setShowModal(false); setStep(0); setModalType(null); }}
@@ -1025,7 +1061,7 @@ return (
           fontSize: 12,
         }}
       >
-        Save
+        Save Training
       </button>
     </div>
 

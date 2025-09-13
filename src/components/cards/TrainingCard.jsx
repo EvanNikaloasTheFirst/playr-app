@@ -3,8 +3,7 @@
 import { useMemo } from "react";
 import { motion } from "framer-motion";
 
-
-export default function TrainingCard({ training, onOpen }) {
+export default function TrainingCard({ training, onOpen, onDelete }) {
   // Random card background color
   const bgColor = useMemo(() => {
     const r = Math.floor(Math.random() * 200) + 30;
@@ -26,22 +25,13 @@ export default function TrainingCard({ training, onOpen }) {
     fontSize: "14px",
   });
 
-  const valueStyle = {
-    display: "inline-block",
-    backgroundColor: "rgba(255, 255, 255, 0.2)",
-    borderRadius: "5px",
-    padding: "2px 6px",
-    fontWeight: "bold",
-    marginLeft: "6px",
-  };
-
   return (
     <motion.div
       whileHover={{ scale: 1.05 }}
       whileTap={{ scale: 0.97 }}
       style={{
         width: "280px",
-        minHeight: "220px",
+        minHeight: "260px",
         borderRadius: "20px",
         backgroundColor: bgColor,
         boxShadow: "0 6px 25px rgba(0,0,0,0.3)",
@@ -49,7 +39,7 @@ export default function TrainingCard({ training, onOpen }) {
         color: "#fff",
         display: "grid",
         gridTemplateColumns: "1fr 1fr",
-        gridTemplateRows: "auto auto auto",
+        gridTemplateRows: "auto auto auto auto auto",
         gap: "12px",
         fontFamily: "Arial, sans-serif",
       }}
@@ -108,26 +98,55 @@ export default function TrainingCard({ training, onOpen }) {
         {training.trainingSummary || "No summary provided."}
       </div>
 
-      {/* Open button */}
-      <button
-        onClick={() => onOpen(training)}
+      {/* Buttons row */}
+      <div
         style={{
           gridColumn: "span 2",
+          display: "flex",
+          gap: "10px",
           marginTop: "8px",
-          border: "none",
-          borderRadius: "12px",
-          backgroundColor: "rgba(0,0,0,0.3)",
-          color: "#fff",
-          fontWeight: "600",
-          padding: "10px",
-          cursor: "pointer",
-          fontSize: "14px",
-          boxShadow: "0 2px 8px rgba(0,0,0,0.2)",
-          transition: "all 0.2s ease",
         }}
       >
-        Open
-      </button>
+        {/* Open button */}
+        <button
+          onClick={() => onOpen(training)}
+          style={{
+            flex: 1,
+            border: "none",
+            borderRadius: "12px",
+            backgroundColor: "rgba(0,0,0,0.3)",
+            color: "#fff",
+            fontWeight: "600",
+            padding: "10px",
+            cursor: "pointer",
+            fontSize: "14px",
+            boxShadow: "0 2px 8px rgba(0,0,0,0.2)",
+            transition: "all 0.2s ease",
+          }}
+        >
+          Open
+        </button>
+
+        {/* Delete button */}
+        <button
+          onClick={() => onDelete(training._id)}
+          style={{
+            flex: 1,
+            border: "none",
+            borderRadius: "12px",
+            backgroundColor: "#FF4C4C",
+            color: "#fff",
+            fontWeight: "600",
+            padding: "10px",
+            cursor: "pointer",
+            fontSize: "14px",
+            boxShadow: "0 2px 8px rgba(0,0,0,0.2)",
+            transition: "all 0.2s ease",
+          }}
+        >
+          Delete
+        </button>
+      </div>
     </motion.div>
   );
 }

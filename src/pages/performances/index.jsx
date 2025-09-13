@@ -135,10 +135,21 @@ useEffect(() => {
           >
             {performances.map((perf) => (
               <PerformanceCard
-                key={perf._id}
-                perf={perf}
-                onOpen={() => handleOpen(perf)}
-              />
+  key={perf._id}
+  perf={perf}
+  onOpen={() => handleOpen(perf)}
+  onDelete={async (id) => {
+    try {
+      const res = await fetch(`/api/performances/${id}`, { method: "DELETE" });
+      if (!res.ok) throw new Error("Failed to delete");
+      setPerformances((prev) => prev.filter((p) => p._id !== id));
+    } catch (err) {
+      alert("Failed to delete performance");
+      console.error(err);
+    }
+  }}
+/>
+
             ))}
           </div>
         )}

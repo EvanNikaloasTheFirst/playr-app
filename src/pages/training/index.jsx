@@ -117,14 +117,33 @@ export default function Training() {
           <div
             style={{
               display: "grid",
-              gridTemplateColumns: `repeat(auto-fit, minmax(260px, 1fr))`,
+              gridTemplateColumns: `repeat(auto-fit, minmax(260px, 450px))`,
               gap: "20px",
               justifyItems: "center",
               gridAutoRows: "auto",
             }}
           >
             {trainings.map((t) => (
-              <TrainingCard key={t._id} training={t} onOpen={setSelectedTraining} />
+<TrainingCard
+  key={t._id}
+  training={t}
+  onOpen={setSelectedTraining}
+  onDelete={async (id) => {
+    if (!confirm("Are you sure you want to delete this training?")) return;
+
+    try {
+      const res = await fetch(`/api/trainings/trainings?id=${id}`, {
+        method: "DELETE",
+      });
+      if (!res.ok) throw new Error("Failed to delete");
+
+      setTrainings((prev) => prev.filter((tr) => tr._id !== id));
+    } catch (err) {
+      console.error(err);
+      alert("Error deleting training");
+    }
+  }}
+/>
             ))}
           </div>
         )}
