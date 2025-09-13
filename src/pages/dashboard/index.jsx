@@ -1,11 +1,9 @@
 "use client";
 import Navbar from "@/components/Utils/Navbar";
-import React, { useState, useEffect } from "react";
-import { useSession, signIn } from "next-auth/react";
-import DashboardBox from "@/components/dashboardComponents/dashboardBox";
-import { useMemo} from "react";
-
+import React, { useState, useEffect, useMemo } from "react";
+import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
+import DashboardBox from "@/components/dashboardComponents/dashboardBox";
 
 // Positions
 const positions = {
@@ -16,394 +14,129 @@ const positions = {
 };
 
 export default function Dashboard() {
+  const { data: session, status } = useSession();
+  const router = useRouter();
+
   const [performances, setPerformances] = useState([]);
   const [lastPerformance, setLastPerformance] = useState(null);
+  const [trainings, setTrainings] = useState([]);
+  const [isMobile, setIsMobile] = useState(false);
+
   const [showModal, setShowModal] = useState(false);
   const [modalType, setModalType] = useState(null); // "match" | "training"
   const [step, setStep] = useState(0);
-    const [isMobile, setIsMobile] = useState(false);
-    const[trainings, setTrainings]=useState([])
-
 
   const [formData, setFormData] = useState({
-    match: "", date: "", mainPosition: "Goalkeeper", subPosition: "Goalkeeper",
-    minutes: "", rating: "", matchOverview: "", didWell: ["", "", ""], couldImprove: ["", "", ""],
-
-  trainingDate: "",
-  trainingRating: "",
-  trainingDuration: "",
-  trainingSummary: "",
-  trainingType: "Gym",
+    match: "",
+    date: "",
+    mainPosition: "Goalkeeper",
+    subPosition: "Goalkeeper",
+    minutes: "",
+    rating: "",
+    matchOverview: "",
+    didWell: ["", "", ""],
+    couldImprove: ["", "", ""],
+    trainingDate: "",
+    trainingRating: "",
+    trainingDuration: "",
+    trainingSummary: "",
+    trainingType: "Gym",
   });
-const trainingTypes = ["Gym", "1-1", "Team Training"];
- const { data: session, status } = useSession();
-  const router = useRouter();
 
+  // Redirect if not logged in
   useEffect(() => {
-    // If session is loading, do nothing
     if (status === "loading") return;
-
-    // If no session, redirect
     if (!session) {
-      router.push("/"); // Redirect to home or login page
+      router.push("/");
     }
   }, [session, status, router]);
 
-  if (!session) {
-    // Optional: show a loading placeholder while redirecting
-    return <div>Redirecting...</div>;
-  }
+  // Fetch trainings
+  useEffect(() => {
+    if (!session) return;
+    const fetchTrainings = async () => {
+      try {
+        const res = await fetch(`/api/trainings/trainings?userId=${encodeURIComponent(session.user.email)}`);
+        if (!res.ok) throw new Error("Failed to fetch trainings");
+        const data = await res.json();
+        setTrainings(data);
+      } catch (err) {
+        console.error("Error fetching trainings:", err);
+      }
+    };
+    fetchTrainings();
+  }, [session]);
 
-     useEffect(() => {
+  // Sort trainings
+  const sortedTrainings = useMemo(() => {
+    if (!trainings || trainings.length === 0) return [];
+    return [...trainings].sort((a, b) => new Date(b.trainingDate) - new Date(a.trainingDate));
+  }, [trainings]);
 
+  // Last 3 trainings
+  const recentTrainings = useMemo(() => sortedTrainings.slice(0, 3), [sortedTrainings]);
 
-  const fetchTrainings = async () => {
-    try {
-      const response = await fetch(`/api/trainings/trainings?userId=${encodeURIComponent(session.user.email)}`);
-      if (!response.ok) throw new Error("Failed to fetch trainings");
+  // Current rating (avg of last 3)
+  const currentRating = useMemo(() => {
+    if (recentTrainings.length === 0) return "N/A";
+    const sum = recentTrainings.reduce((acc, t) => acc + (Number(t.trainingRating) || 0), 0);
+    return Math.round(sum / recentTrainings.length);
+  }, [recentTrainings]);
 
-      const data = await response.json();
-      setTrainings(data);
-    } catch (err) {
-      console.error("Error fetching trainings:", err);
-    }
+  const getCircleColor = (rating) => {
+    if (rating > 7) return "#006400"; // dark green
+    if (rating > 6) return "#90EE90"; // light green
+    return "#FF4C4C"; // red
   };
 
-  fetchTrainings();
-}, [session]);
-
-// Sort and take last 3 trainings
-const sortedTrainings = useMemo(() => {
-  return [...trainings].sort((a, b) => new Date(b.trainingDate) - new Date(a.trainingDate));
-}, [trainings]);
-
-const recentTrainings = sortedTrainings.slice(0, 3);
-
-const currentRating = useMemo(() => {
-  if (recentTrainings.length === 0) return "N/A";
-
-  const sum = recentTrainings.reduce((acc, t) => {
-    const rating = Number(t.trainingRating); // convert to number
-    return acc + (isNaN(rating) ? 0 : rating);
-  }, 0);
-
-  return Math.round(sum / recentTrainings.length);
-}, [recentTrainings]);
-
-
-const getCircleColor = (rating) => {
-  if (rating > 7) return "#006400"; // dark green
-  if (rating > 6) return "#90EE90"; // light green
-  return "#FF4C4C"; // red
-};
-
-
-// Set performances 
-useEffect(() => {
+  // Fetch performances
+  useEffect(() => {
     if (!session) return;
-
     const fetchPerformances = async () => {
       try {
-        const response = await fetch(
-          `/api/performances/performances?userId=${encodeURIComponent(session.user.email)}`
-        );
-        if (!response.ok) throw new Error("Failed to fetch performances");
-
-        const data = await response.json();
+        const res = await fetch(`/api/performances/performances?userId=${encodeURIComponent(session.user.email)}`);
+        if (!res.ok) throw new Error("Failed to fetch performances");
+        const data = await res.json();
         setPerformances(data);
       } catch (err) {
         console.error("Error fetching performances:", err);
       }
     };
-
     fetchPerformances();
   }, [session]);
 
-  // Fetch the last (most recent) performance
+  // Fetch last performance
   useEffect(() => {
     if (!session) return;
-
     const fetchLastPerformance = async () => {
       try {
-        const response = await fetch(
-          `/api/performances/performances?userId=${encodeURIComponent(session.user.email)}&recent=true`
-        );
-        if (!response.ok) throw new Error("Failed to fetch last performance");
-
-        const data = await response.json();
-        console.log("Hello", data[0])
-        setLastPerformance(data[0]); // ✅ data is already a single object from backend
+        const res = await fetch(`/api/performances/performances?userId=${encodeURIComponent(session.user.email)}&recent=true`);
+        if (!res.ok) throw new Error("Failed to fetch last performance");
+        const data = await res.json();
+        setLastPerformance(data[0]);
       } catch (err) {
         console.error("Error fetching last performance:", err);
       }
     };
-
     fetchLastPerformance();
   }, [session]);
 
-
-   useEffect(() => {
-    // Responsive: check mobile width
+  // Responsive check
+  useEffect(() => {
     const handleResize = () => setIsMobile(window.innerWidth <= 768);
     handleResize();
     window.addEventListener("resize", handleResize);
     return () => window.removeEventListener("resize", handleResize);
   }, []);
- const handleChange = (e, idx, field) => {
-  const { name, value } = e.target;
 
-  if (name === "minutes") {
-    const minutes = Number(value);
-    if (minutes < 1 || minutes > 130) return;
-  }
-
-  if (name === "rating") {
-    const rating = Number(value);
-    if (rating < 1 || rating > 10) return;
-  }
-
-  if (idx !== undefined && field) {
-    setFormData(prev => {
-      const updated = [...prev[field]];
-      updated[idx] = value;
-      return { ...prev, [field]: updated };
-    });
-  } else {
-    setFormData(prev => ({ ...prev, [name]: value }));
-  }
-};
-
-
-function getSeason(dateInput) {
-  let year, month;
-
-  if (!dateInput) return ""; // nothing selected yet
-
-  if (typeof dateInput === "string") {
-    // case: "yyyy-mm-dd"
-    const parts = dateInput.split("-");
-    if (parts.length < 2) return "";
-    year = Number(parts[0]);
-    month = Number(parts[1]);
-  } else if (dateInput instanceof Date) {
-    // case: Date object
-    year = dateInput.getFullYear();
-    month = dateInput.getMonth() + 1;
-  } else {
-    return "";
-  }
-
-  // season logic
-  if (month >= 7) {
-    const startYear = year % 100;
-    const endYear = (year + 1) % 100;
-    return `${startYear.toString().padStart(2, "0")}/${endYear
-      .toString()
-      .padStart(2, "0")}`;
-  } else {
-    const startYear = (year - 1) % 100;
-    const endYear = year % 100;
-    return `${startYear.toString().padStart(2, "0")}/${endYear
-      .toString()
-      .padStart(2, "0")}`;
-  }
-}
-
-function convertToMinutes(timeStr) {
-  if (!timeStr) return 0;
-
-  const [hours, minutes] = timeStr.split(":").map(Number);
-
-  if (isNaN(hours) || isNaN(minutes)) {
-    throw new Error("Invalid time format. Expected hh:mm");
-  }
-
-  return hours * 60 + minutes;
-}
-
-
-const handleSaveTraining = async () => {
-  // ✅ Basic validation
-  if (!formData.trainingDate) {
-    alert("Please select a training date.");
-    return;
-  }
-  if (!formData.trainingDuration ) {
-    console.log(formData.trainingDuration)
-    alert("Please enter a valid training duration.");
-    return;
-  }
-  if (
-    !formData.trainingRating ||
-    isNaN(formData.trainingRating) ||
-    formData.trainingRating < 1 ||
-    formData.trainingRating > 10
-  ) {
-    alert("Please provide a training rating between 1 and 10.");
-    return;
-  }
-  if (!formData.trainingType) {
-    alert("Please select a training type.");
-    return;
-  }
-  if (!formData.trainingSummary.trim()) {
-    alert("Please enter a training summary.");
-    return;
-  }
-
-  const newTraining = {
-    userId: session.user.email,
-    trainingDate: formData.trainingDate,
-    trainingDuration: convertToMinutes(formData.trainingDuration),
-    trainingRating: (formData.trainingRating),
-    trainingType: formData.trainingType,
-    trainingSummary: formData.trainingSummary.trim(),
-    season: getSeason(formData.trainingDate),
-  };
-
-  try {
-    const response = await fetch("/api/trainings/trainings", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(newTraining),
-    });
-
-    if (!response.ok) {
-      const errorText = await response.text(); // get the response body
-      console.error("❌ Save training failed:", errorText);
-      throw new Error("Failed to save training");
-    }
-
-    // ✅ Reset form
-    setFormData(prev => ({
-      ...prev,
-      trainingDate: "",
-      trainingRating: "",
-      trainingDuration: "",
-      trainingSummary: "",
-      trainingType: "Gym",
-    }));
-
-    setShowModal(false);
-    setModalType('')
-    setStep(0);
-  } catch (error) {
-    console.error("Error saving training:", error);
-    alert("Something went wrong while saving your training. Please try again.");
-  }
-};
-
-
-const handleSave = async () => {
-  // ✅ Validation
-  if (!formData.match.trim()) {
-    alert("Match name is required");
-    return;
-  }
-
-  if (!formData.date) {
-    alert("Date is required");
-    return;
-  }
-
-  if (!formData.minutes || isNaN(formData.minutes) || formData.minutes < 0 || formData.minutes > 120) {
-    alert("Minutes must be a number between 0 and 120");
-    return;
-  }
-
-  if (!formData.rating || isNaN(formData.rating) || formData.rating < 1 || formData.rating > 10) {
-    alert("Rating must be a number between 1 and 10");
-    return;
-  }
-
-  if (!formData.matchOverview.trim()) {
-    alert("Match overview is required");
-    return;
-  }
-
-  // Optional: validate at least one "did well" and "could improve" entry
-  if (formData.didWell.every((item) => !item.trim())) {
-    alert("Please enter at least one thing you did well");
-    return;
-  }
-
-  if (formData.couldImprove.every((item) => !item.trim())) {
-    alert("Please enter at least one thing you could improve");
-    return;
-  }
-
-  console.log(formData.date)
-
-  // ✅ If validation passes, continue
-  const newPerf = {
-    match: formData.match,
-    date: formData.date,
-    season: getSeason(formData.date),
-    position: `${formData.mainPosition} - ${formData.subPosition}`,
-    minutes: Number(formData.minutes),
-    rating: Number(formData.rating),
-    matchOverview: formData.matchOverview,
-    didWell: formData.didWell,
-    couldImprove: formData.couldImprove,
-  };
-
-  try {
-    const response = await fetch("/api/performances/performances", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(newPerf),
-    });
-
-    if (!response.ok) throw new Error("Failed to save performance");
-
-    const savedPerf = await response.json();
-
-    setPerformances((prev) => [...prev, savedPerf]);
-
-    
-
-    setFormData({
-      match: "",
-      date: "",
-      season:"",
-      mainPosition: "Goalkeeper",
-      subPosition: "Goalkeeper",
-      minutes: "",
-      rating: "",
-      matchOverview: "",
-      didWell: ["", "", ""],
-      couldImprove: ["", "", ""],
-    });
-
-    setShowModal(false);
-    setModalType('')
-    setStep(0);
-  } catch (error) {
-    console.error("Error saving performance:", error);
-    alert("Failed to save performance. Please try again.");
-  }
-};
-
-
-  const glassInputStyle = {
-    padding: 10,
-    borderRadius: 10,
-    border: "1px solid rgba(255,255,255,0.3)",
-    backgroundColor: "rgba(255,255,255,0.15)",
-    backdropFilter: "blur(6px)",
-    WebkitBackdropFilter: "blur(6px)",
-    color: "#fff",
-    outline: "none",
-    width: "90%",
-    fontSize: 13,
-  };
-
+  // Early return AFTER hooks
+  if (status === "loading") return <div>Loading...</div>;
+  if (!session) return <div>Redirecting...</div>;
   const totalMinutes = performances.reduce((sum, p) => sum + (p.minutes || 0), 0);
   const averageRating = performances.length ? (performances.reduce((sum, p) => sum + (p.rating || 0), 0) / performances.length).toFixed(2) : 0;
   const totalGoals = performances.reduce((sum, p) => sum + (p.goals || 0), 0);
   const totalAssists = performances.reduce((sum, p) => sum + (p.assists || 0), 0);
-
-  const gridStyle = {
+    const gridStyle = {
     display: "grid",
     gridTemplateColumns: isMobile ? "1fr" : "repeat(3, 500px)",
     gridTemplateRows: isMobile ? "auto" : "auto auto",
@@ -415,7 +148,13 @@ const handleSave = async () => {
     left:"20px"
   };
 
-  return (
+
+  
+
+
+return (
+
+  
     <div style={{ minHeight: "100vh",  fontFamily: "Arial, sans-serif", padding: 16 }}>
       <Navbar />
 
