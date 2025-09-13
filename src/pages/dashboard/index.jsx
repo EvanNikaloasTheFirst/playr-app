@@ -21,6 +21,7 @@ export default function Dashboard() {
   const [lastPerformance, setLastPerformance] = useState(null);
   const [trainings, setTrainings] = useState([]);
   const [isMobile, setIsMobile] = useState(false);
+  const [trainingTypes, setTrainingTypes] = useState(["1-1", "Gym", "Team Training"])
 
   const [showModal, setShowModal] = useState(false);
   const [modalType, setModalType] = useState(null); // "match" | "training"
@@ -42,6 +43,8 @@ export default function Dashboard() {
     trainingSummary: "",
     trainingType: "Gym",
   });
+
+  
 
   // Redirect if not logged in
   useEffect(() => {
@@ -149,7 +152,80 @@ export default function Dashboard() {
   };
 
 
-  
+  // Handle changes for both regular fields and array fields
+const handleChange = (e, index = null, field = null) => {
+  const { name, value, type } = e.target;
+
+  if (field && index !== null) {
+    // For array fields like didWell or couldImprove
+    setFormData((prev) => {
+      const updatedArray = [...prev[field]];
+      updatedArray[index] = value;
+      return { ...prev, [field]: updatedArray };
+    });
+  } else {
+    // For regular fields
+    setFormData((prev) => ({
+      ...prev,
+      [name]: type === "number" ? Number(value) : value,
+    }));
+  }
+};
+const glassInputStyle = {
+  width: "85%",
+  padding: "10px 14px",
+  borderRadius: "12px",
+  border: "1px solid rgba(255, 255, 255, 0.25)",
+  background: "rgba(255, 255, 255, 0.05)",
+  color: "#fff",
+  fontSize: "14px",
+  outline: "none",
+  backdropFilter: "blur(6px)",
+  WebkitBackdropFilter: "blur(6px)", // Safari support
+  transition: "all 0.2s ease",
+};
+
+const handleSaveTraining = async () => {
+  if (!formData.trainingDate || !formData.trainingRating || !formData.trainingDuration) {
+    alert("Please fill in all required fields!");
+    return;
+  }
+
+  try {
+    const res = await fetch("/api/trainings/trainings", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(formData),
+    });
+
+    if (!res.ok) throw new Error("Failed to save training");
+
+    const savedTraining = await res.json();
+
+    // Update local state
+    setTrainings((prev) => [savedTraining, ...prev]);
+
+    // Reset modal
+    setShowModal(false);
+    setStep(0);
+    setModalType(null);
+
+    // Reset formData fields related to training
+    setFormData((prev) => ({
+      ...prev,
+      trainingDate: "",
+      trainingRating: "",
+      trainingDuration: "",
+      trainingSummary: "",
+      trainingType: "Gym",
+    }));
+  } catch (err) {
+    console.error(err);
+    alert("Error saving training session");
+  }
+};
 
 
 return (
@@ -343,7 +419,7 @@ return (
                 </div>
 
                 {/* Date */}
-                <span style={{ fontSize: "14px", color: "#FFF" }}>
+                <span style={{ fontSize: "14px", color: "#FFF", width:"75%"}}>
                   {new Date(training.trainingDate).toLocaleDateString("en-GB", {
                     day: "2-digit",
                     month: "2-digit",
@@ -397,6 +473,11 @@ return (
           if (rating > 6) return "#90EE90"; // light green
           return "#FF4C4C"; // red
         };
+        
+
+        // Save training session
+
+
 
         return (
 <div
@@ -733,7 +814,7 @@ return (
         min="1" max="10"
       />
     </div>
-    <textarea placeholder="Brief match overview: key events, performance highlights" name="matchOverview" value={formData.matchOverview} onChange={handleChange} style={{ ...glassInputStyle, resize: "none", minHeight: 80 }} />
+    <textarea placeholder="Brief match overview: key events, performance highlights" name="matchOverview" value={formData.matchOverview} onChange={handleChange} style={{ ...glassInputStyle, resize: "none", minHeight: 80, width:"75%"}} />
   </div>
 )}
 
