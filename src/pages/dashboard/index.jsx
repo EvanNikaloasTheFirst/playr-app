@@ -856,7 +856,7 @@ return (
         }}>
           <div style={{
             background: "linear-gradient(145deg, #514949ff, #2d2d2d)",
-            padding: 20, borderRadius: 16, maxWidth: 600, width: "100%",
+            padding: 20, borderRadius: 16, maxWidth: 600, width: "80%",
             display: "flex", flexDirection: "column", gap: 20, color: "#1e3a8a",
             boxShadow: "0 10px 30px rgba(0,0,0,0.25)", fontSize: 13
           }}>
@@ -864,7 +864,7 @@ return (
 {/* Step 1: Match Info */}
 {step === 0 && (
   <div style={{ 
-    display: "flex", 
+    display: "flex",
     flexDirection: "column", 
     gap: 12, 
     padding: 16, 
@@ -967,7 +967,7 @@ return (
     position: "fixed",
     top: 0,
     left: 0,
-    width: "100%",
+    width: "95%",
     height: "100%",
     backgroundColor: "rgba(0,0,0,0.75)",
     backdropFilter: "blur(8px)",
@@ -984,7 +984,7 @@ return (
       padding: 20,
       borderRadius: 16,
       maxWidth: 600,
-      width: "100%",
+      width: "80%",
       display: "flex",
       flexDirection: "column",
       gap: 20,
