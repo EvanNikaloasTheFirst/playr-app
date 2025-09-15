@@ -81,7 +81,7 @@ export default function PerformanceCard({ perf, onOpen, onDelete }) {
         <p style={{ fontSize: "14px", margin: "2px 0" }}>
           Season: <span style={{ fontWeight: "bold" }}>{perf.season}</span>
         </p>
-        <p style={{ fontSize: "14px", margin: "2px 0" }}>Position: {perf.position}</p>
+        <p style={{ fontSize: "14px", margin: "2px 0" }}>Position: {perf.subPosition}</p>
         <p style={{ fontSize: "14px", margin: "2px 0" }}>
           Minutes:{" "}
           <span style={{ backgroundColor: "rgba(255,255,255,0.2)", padding: "2px 6px", borderRadius: "5px" }}>

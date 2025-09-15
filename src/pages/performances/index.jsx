@@ -10,8 +10,12 @@ export default function Performances() {
   const { data: session, status } = useSession();
   const [performances, setPerformances] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [season, setSeason] = useState("25/26");
-  const [columns, setColumns] = useState(4);
+const [columns, setColumns] = useState(4);
+const [seasonStart, setSeasonStart] = useState("");
+const [seasonEnd, setSeasonEnd] = useState("");
+
+// derived combined season string
+const season = seasonStart && seasonEnd ? `${seasonStart}/${seasonEnd}` : "";
 
       const router = useRouter();
 useEffect(() => {
@@ -101,23 +105,57 @@ useEffect(() => {
           Performances ({season})
         </h1>
 
-        <select
-          value={season}
-          onChange={(e) => setSeason(e.target.value)}
-          style={{
-            padding: "8px 12px",
-            borderRadius: "8px",
-            border: "1px solid rgba(255,255,255,0.3)",
-            backgroundColor: "rgba(0,0,0,0.4)",
-            color: "#fff",
-            marginBottom: "24px",
-            cursor: "pointer",
-          }}
-        >
-          <option value="24/25">24/25</option>
-          <option value="25/26">25/26</option>
-          <option value="26/27">26/27</option>
-        </select>
+<div style={{ display: "flex", gap: "8px", marginBottom: "24px" }}>
+  <input
+    type="number"
+    min="0"
+    max="99"
+    placeholder="YY"
+    value={seasonStart}
+    onChange={(e) => {
+      const val = e.target.value;
+      if (/^\d{0,2}$/.test(val)) {
+        setSeasonStart(val);
+      }
+    }}
+    style={{
+      padding: "8px 12px",
+      borderRadius: "8px",
+      border: "1px solid rgba(255,255,255,0.3)",
+      backgroundColor: "rgba(0,0,0,0.4)",
+      color: "#fff",
+      width: "60px",
+      textAlign: "center",
+    }}
+  />
+
+  <span style={{ alignSelf: "center", color: "#fff" }}>/</span>
+
+  <input
+    type="number"
+    min="0"
+    max="99"
+    placeholder="YY"
+    value={seasonEnd}
+    onChange={(e) => {
+      const val = e.target.value;
+      if (/^\d{0,2}$/.test(val)) {
+        setSeasonEnd(val);
+      }
+    }}
+    style={{
+      padding: "8px 12px",
+      borderRadius: "8px",
+      border: "1px solid rgba(255,255,255,0.3)",
+      backgroundColor: "rgba(0,0,0,0.4)",
+      color: "#fff",
+      width: "60px",
+      textAlign: "center",
+    }}
+  />
+</div>
+
+
 
         {loading ? (
           <p>Loading performances...</p>
@@ -160,7 +198,7 @@ useEffect(() => {
       position: "fixed",
       top: 0,
       left: 0,
-      width: "95%",
+      width: "90%",
       height: "100vh",
       backgroundColor: "rgba(0,0,0,0.85)",
       display: "flex",
@@ -171,37 +209,37 @@ useEffect(() => {
       overflowY: "auto",
     }}
   >
-    <div
-      style={{
-        width: "90%",
-        maxWidth: "700px",
-        borderRadius: "20px",
-        padding: "24px",
-        color: "#fff",
-        display: "grid",
-        gridTemplateColumns: "1fr 1fr",
-        gridTemplateRows: "auto auto auto auto auto",
-        gap: "16px",
-        fontFamily: "Arial, sans-serif",
-        position: "relative",
-      }}
-    >
-      {/* Close Button */}
-      <button
-        onClick={handleClose}
-        style={{
-          position: "absolute",
-          top: "16px",
-          right: "16px",
-          background: "transparent",
-          border: "none",
-          color: "#fff",
-          fontSize: "24px",
-          cursor: "pointer",
-        }}
-      >
-        &times;
-      </button>
+   <div
+  style={{
+    width: "90%",
+    maxWidth: "700px",
+    borderRadius: "20px",
+    padding: "24px",
+    color: "#fff",
+    display: "grid",
+    gridTemplateColumns: "1fr 1fr",
+    gridTemplateRows: "auto auto auto auto auto",
+    gap: "16px",
+    fontFamily: "Arial, sans-serif",
+    position: "relative",
+  }}
+>
+  {/* Close Button */}
+  <button
+    onClick={handleClose}
+    style={{
+      position: "absolute",
+      top: "26px",
+      right: "26px",
+      background: "transparent",
+      border: "none",
+      color: "#fff",
+      fontSize: "24px",
+      cursor: "pointer",
+    }}
+  >
+    &times;
+  </button>
 
       {/* Minutes */}
       <div
@@ -279,92 +317,95 @@ useEffect(() => {
           boxShadow: "0 4px 10px rgba(0,0,0,0.15)",
         }}
       >
-        🧍 {selectedPerf.position ?? "-"}
-        <span style={{ fontSize: 12, marginTop: 2 }}>Position</span>
+        🧍 {selectedPerf.subPosition ?? "-"}
+        <span style={{ fontSize: 12, marginTop: 2 }}>{selectedPerf.mainPosition}</span>
       </div>
 
       {/* Did Well */}
-      <div
-        style={{
-          gridColumn: "span 2",
-          background: "#FFB347",
-          borderRadius: "12px",
-          padding: "16px",
+{selectedPerf.didWell?.filter(Boolean).length > 0 && (
+  <div
+    style={{
+      gridColumn: "span 2",
+      background: "#FFB347",
+      borderRadius: "12px",
+      padding: "16px",
+      fontSize: 14,
+      display: "flex",
+      flexDirection: "column",
+      justifyContent: "center",
+      alignItems: "center",
+      textAlign: "center",
+      boxShadow: "0 4px 10px rgba(0,0,0,0.15)",
+    }}
+  >
+    <span style={{ fontSize: 16, fontWeight: "bold", marginBottom: 8 }}>
+      ✅ Did Well
+    </span>
 
-          fontSize: 14,
-          display: "flex",
-          flexDirection: "column",
-          justifyContent: "center",
-          alignItems: "center",
-          textAlign: "center",
-          boxShadow: "0 4px 10px rgba(0,0,0,0.15)",
-        }}
-      >
-        <span style={{ fontSize: 16, fontWeight: "bold", marginBottom: 8 }}>
-          ✅ Did Well
-        </span>
-        {selectedPerf.didWell?.length ? (
-          <ul
-            style={{
-              listStyle: "none",
-              padding: 0,
-              margin: 0,
-              display: "flex",
-              flexDirection: "column",
-              gap: "4px",
-              alignItems: "center",
-              fontSize: 14,
-            }}
-          >
-            {selectedPerf.didWell.map((item, idx) => (
-              <li key={idx}>• {item}</li>
-            ))}
-          </ul>
-        ) : (
-          <span>-</span>
-        )}
-      </div>
+    <ul
+      style={{
+        listStyle: "none",
+        padding: 0,
+        margin: 0,
+        display: "flex",
+        flexDirection: "column",
+        gap: "4px",
+        alignItems: "center",
+        fontSize: 14,
+      }}
+    >
+      {selectedPerf.didWell
+        .filter(Boolean) // prevents empty/null/undefined values
+        .map((item, idx) => (
+          <li key={idx}>• {item}</li>
+        ))}
+    </ul>
+  </div>
+)}
+
 
       {/* Could Improve */}
-      <div
-        style={{
-          gridColumn: "span 2",
-          background: "#FF6961",
-          borderRadius: "12px",
-          padding: "16px",
-          fontSize: 14,
-          display: "flex",
-          flexDirection: "column",
-          justifyContent: "center",
-          alignItems: "center",
-          textAlign: "center",
-          boxShadow: "0 4px 10px rgba(0,0,0,0.15)",
-        }}
-      >
-        <span style={{ fontSize: 16, fontWeight: "bold", marginBottom: 8 }}>
-          ⚠️ Could Improve
-        </span>
-        {selectedPerf.couldImprove?.length ? (
-          <ul
-            style={{
-              listStyle: "none",
-              padding: 0,
-              margin: 0,
-              display: "flex",
-              flexDirection: "column",
-              gap: "4px",
-              alignItems: "center",
-              fontSize: 14,
-            }}
-          >
-            {selectedPerf.couldImprove.map((item, idx) => (
-              <li key={idx}>• {item}</li>
-            ))}
-          </ul>
-        ) : (
-          <span>-</span>
-        )}
-      </div>
+  {selectedPerf.couldImprove?.filter(Boolean).length > 0 && (
+  <div
+    style={{
+      gridColumn: "span 2",
+      background: "#FF6961",
+      borderRadius: "12px",
+      padding: "16px",
+      fontSize: 14,
+      display: "flex",
+      flexDirection: "column",
+      justifyContent: "center",
+      alignItems: "center",
+      textAlign: "center",
+      boxShadow: "0 4px 10px rgba(0,0,0,0.15)",
+    }}
+  >
+    <span style={{ fontSize: 16, fontWeight: "bold", marginBottom: 8 }}>
+      ⚠️ Could Improve
+    </span>
+
+    <ul
+      style={{
+        listStyle: "none",
+        padding: 0,
+        margin: 0,
+        display: "flex",
+        flexDirection: "column",
+        gap: "4px",
+        alignItems: "center",
+        fontSize: 14,
+      }}
+    >
+      {selectedPerf.couldImprove
+        .filter(Boolean) // removes empty/null/undefined
+        .map((item, idx) => (
+          <li key={idx}>• {item}</li>
+        ))}
+    </ul>
+  </div>
+)}
+
 
       {/* Video Placeholder */}
       <div
