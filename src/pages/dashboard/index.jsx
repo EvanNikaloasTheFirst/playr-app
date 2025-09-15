@@ -287,6 +287,7 @@ const handleSavePerformance = async () => {
     season:getSeason(formData.date)
   };
 
+  console.log(payload)
   try {
     const res = await fetch("/api/performances/performances", {
       method: "POST",
@@ -395,8 +396,8 @@ return (
             boxShadow: "0 4px 10px rgba(0,0,0,0.15)",
           }}
         >
-          🧍 {lastPerformance?.position ?? "-"}
-          <span style={{ fontSize: 12, marginTop: 2, color:"#FFF"}}>Position</span>
+          🧍 {lastPerformance?.subPosition?? "-"}
+          <span style={{ fontSize: 12, marginTop: 2, color:"#FFF"}}>{lastPerformance?.mainPosition}</span>
         </div>
 
         {/* Row 3: Did Well */}
@@ -419,22 +420,25 @@ return (
         >
           <span style={{ fontSize: 16, fontWeight: "bold", marginBottom: 8 }}>✅ Did Well</span>
           {lastPerformance?.didWell?.length ? (
-            <ul
-              style={{
-                listStyle: "none",
-                padding: 0,
-                margin: 0,
-                display: "flex",
-                flexDirection: "column",
-                gap: "4px",
-                alignItems: "center",
-                fontSize: 14,
-              }}
-            >
-              {lastPerformance.didWell.map((item, idx) => (
-                <li key={idx}>• {item}</li>
-              ))}
-            </ul>
+           <ul
+  style={{
+    listStyle: "none",
+    padding: 0,
+    margin: 0,
+    display: "flex",
+    flexDirection: "column",
+    gap: "4px",
+    alignItems: "center",
+    fontSize: 14,
+  }}
+>
+  {lastPerformance.didWell
+    .filter(Boolean) // removes empty/undefined/null items
+    .map((item, idx) => (
+      <li key={idx}>• {item}</li>
+    ))}
+</ul>
+
           ) : (
             <span>-</span>
           )}
@@ -585,7 +589,7 @@ return (
   <span style={{ fontSize: "15px", fontWeight: "bold" }}>{p.match ?? "Opponent"}</span>
   <span style={{ fontSize: "16px", fontWeight: "bold" }}>⭐ {p.rating}</span>
   <span style={{ fontSize: "16px" }}>⏱️ {p.minutes + "'" ?? 0} </span>
-  <span style={{ fontSize: "14px" }}>🧍 {p.position ?? "-"}</span>
+  <span style={{ fontSize: "14px" }}>🧍 {p.subPosition ?? "-"}</span>
 </div>
 
 
@@ -599,7 +603,7 @@ return (
 
   {/* Row 2, Column 1 */}
   <div style={{ width: "100%", textAlign: "center" }}>
-    <h3 style={{ color: "#fff", marginBottom: 8 }}>Season 2025/26</h3>
+    <h3 style={{ color: "#fff", marginBottom: 8 }}>Season</h3>
     <DashboardBox color="lightpink">
     <div
       style={{
