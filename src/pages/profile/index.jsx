@@ -147,7 +147,7 @@ export default function Profile() {
             }}
           />
           <div>
-            <h2 style={{ fontSize: "1.8rem" }}>{session.user.name || "Anonymous Player"}</h2>
+            <h2 style={{ fontSize: "1.2em" }}>{session.user.name || "Anonymous Player"}</h2>
             <p style={{ opacity: 0.8 }}>{session.user.email}</p>
           </div>
         </div>
@@ -199,7 +199,7 @@ export default function Profile() {
         </div>
 
         {/* Bio / Goals */}
-        <div style={{ marginTop: "40px" }}>
+        <div style={{ marginTop: "40px", width:"90%" }}>
           <h3 style={{ fontSize: "1.4rem" }}>About Me</h3>
           {editing ? (
             <>
